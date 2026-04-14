@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+.env
+
+# Generated outputs — too large for git, regenerate by running the pipeline
+models/
+data/
+results/
+figures/
+report/
+
+# Large binary model files (safety net)
+*.safetensors
+*.pt
+*.bin
+*.ckpt
+*.h5
