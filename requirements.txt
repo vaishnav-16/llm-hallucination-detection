@@ -1,11 +1,5 @@
-datasets>=2.14.0
-transformers>=4.35.0
-sentence-transformers>=2.2.0
-scikit-learn>=1.3.0
-pandas>=2.0.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
-numpy>=1.24.0
-tqdm>=4.65.0
-streamlit>=1.30.0
-plotly>=5.18.0
+# Dependencies are declared in pyproject.toml. This file installs the package with the common extras.
+#   Cloud / CPU:        pip install -r requirements.txt
+#   RTX 4070 (Windows): install a CUDA build of torch first (see HANDOFF.md), then
+#                       pip install -e ".[gpu,api,dashboard,dev]"
+-e .[models,api,dashboard,dev]

@@ -11,7 +11,7 @@ from typing import Sequence
 
 import numpy as np
 
-from src.config import MODELS
+from src.config import MODELS, ROOT
 from src.detectors.base import Detector, run_batched
 from src.verify.chunking import SpanFn, hf_span_fn
 
@@ -59,7 +59,7 @@ class HHEMDetector(_HFDetector):
         spec = MODELS["hhem"]
         self.name, self.device, self.batch_size, self.max_length = name, device, batch_size, max_length
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            spec["repo_id"], revision=spec["revision"], trust_remote_code=True, torch_dtype=_dtype(device, precision)
+            spec["repo_id"], revision=spec["revision"], trust_remote_code=True, dtype=_dtype(device, precision)
         )
         self.model.t5.to(device).eval()
         self.tokenizer = self.model.tokenzier  # (sic) attribute name in HHEM's remote code
@@ -94,17 +94,27 @@ class SequenceClassifierDetector(_HFDetector):
         max_length: int = 512,
         precision: str = "auto",
         name: str | None = None,
+        extend_positions: int | None = None,
     ):
-        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+        from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 
         if model in MODELS:  # short name from config.MODELS
             revision = revision or MODELS[model]["revision"]
             model = MODELS[model]["repo_id"]
-        self.name = name or model.split("/")[-1]
+        elif (ROOT / model).exists():  # a local fine-tuned checkpoint, e.g. models/modernbert-nli-ft/seed42
+            model = str(ROOT / model)
+        self.name = name or model.replace("\\", "/").rstrip("/").split("/")[-1]
         self.device, self.batch_size, self.max_length = device, batch_size, max_length
         self.tokenizer = AutoTokenizer.from_pretrained(model, revision=revision)
+        cfg = AutoConfig.from_pretrained(model, revision=revision)
+        if extend_positions:
+            # Only for rotary-position models (ModernBERT): there is no learned position table to outgrow.
+            if cfg.model_type != "modernbert":
+                raise ValueError(f"{self.name}: extend_positions is only supported for ModernBERT, not {cfg.model_type}")
+            logger.warning("%s: extending max_position_embeddings %d -> %d (RoPE)", self.name, cfg.max_position_embeddings, extend_positions)
+            cfg.max_position_embeddings = extend_positions
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            model, revision=revision, torch_dtype=_dtype(device, precision)
+            model, revision=revision, config=cfg, dtype=_dtype(device, precision)
         ).to(device).eval()
         labels = {int(k): str(v).lower() for k, v in self.model.config.id2label.items()}
         if output == "auto":
@@ -162,7 +172,7 @@ class LettuceDetector(_HFDetector):
         self.name, self.device, self.batch_size, self.max_length = name, device, batch_size, max_length
         self.tokenizer = AutoTokenizer.from_pretrained(spec["repo_id"], revision=spec["revision"])
         self.model = AutoModelForTokenClassification.from_pretrained(
-            spec["repo_id"], revision=spec["revision"], torch_dtype=_dtype(device, precision)
+            spec["repo_id"], revision=spec["revision"], dtype=_dtype(device, precision)
         ).to(device).eval()
 
     @staticmethod

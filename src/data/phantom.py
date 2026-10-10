@@ -145,7 +145,7 @@ def load_long(cell: Cell, seed: pd.DataFrame, max_unjoined: float = 0.05) -> pd.
        whose passage appears verbatim inside the long context wins. These rows get ``variant='original'``.
     2. otherwise, same query and the seed passage appears verbatim (whitespace-normalized) inside the long
        context, but the answers differ. The 10-K files never need this step; in the DEF 14A long files
-       roughly a fifth of the answers were regenerated relative to the seed. These rows get
+       31% of pairs have answers regenerated relative to the seed (see the data card). These rows get
        ``variant='reanswered'``: same question and evidence, so the split is safe, but they are not
        answer-identical across lengths.
     Groups matching neither get their own pair id and ``variant='long_only'``; more than

@@ -36,6 +36,8 @@ MODELS = {
     "modernbert_nli": {"repo_id": "tasksource/ModernBERT-base-nli", "revision": "de4ab7e77845098b7fab7f6ab9d370ddff27b19c"},
     "deberta_nli": {"repo_id": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli", "revision": "6f5cf0a2b59cabb106aca4c287eed12e357e90eb"},
     "lettucedetect": {"repo_id": "KRLabsOrg/lettucedect-base-modernbert-en-v1", "revision": "bbd77832f52f9bd87546a3924c032467921f5c34"},
+    "qwen3_4b": {"repo_id": "Qwen/Qwen3-4B-Instruct-2507", "revision": "cdbee75f17c01a7cc42f958dc650907174af0554"},
+    "qwen3_8b": {"repo_id": "Qwen/Qwen3-8B", "revision": "b968826d9c46dd6066d109eabc6255188de91218"},
 }
 
 

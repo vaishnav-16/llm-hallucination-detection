@@ -1,0 +1,51 @@
+# Zero-shot encoders over PHANTOM grid_sub (all 32 test cells, 200 pairs per filing) + validation + other test sets.
+# Run on the RTX 4070:  python -m src.cli score --config configs/zeroshot_grid.yaml --device cuda
+# Resumable per cell. Windows follow artifacts/data_card.md: seed passages are ~560-640 tokens (p50),
+# ~800-925 (p95), <= ~1,700 (max) under these tokenizers; overlap O guarantees passages <= O+1 tokens fit.
+# Rough GPU time: 6-7 h total (chunk dominates; truncate/retrieve are minutes). Re-check after the first cell.
+name: zeroshot_grid
+runs:
+  - name: hhem
+    detector: {type: hhem, max_length: 2560, batch_size: 8, precision: fp32}
+    strategies:
+      - {strategy: truncate, window: 2048}
+      - {strategy: chunk, window: 2048, overlap: 1024}
+      - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 2}
+    slices: [phantom_grid_sub, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_nli
+    detector: {type: seqcls, model: modernbert_nli, max_length: 2048, batch_size: 16}
+    strategies:
+      - {strategy: truncate, window: 1536}
+      - {strategy: chunk, window: 1536, overlap: 1024}
+      - {strategy: retrieve, window: 1536, overlap: 1024, top_k: 2}
+    slices: [phantom_grid_sub, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
+
+  - name: lettucedetect
+    detector: {type: lettuce, max_length: 4096, batch_size: 4}
+    strategies:
+      - {strategy: truncate, window: 3584}
+      - {strategy: chunk, window: 3584, overlap: 1536}
+      - {strategy: retrieve, window: 3584, overlap: 1536, top_k: 2}
+    slices: [phantom_grid_sub, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
+
+  - name: deberta_nli   # 512-token comparison: cannot hold most seed passages in one window ("partial evidence")
+    detector: {type: seqcls, model: deberta_nli, max_length: 512, batch_size: 32}
+    strategies:
+      - {strategy: truncate, window: 400}
+      - {strategy: chunk, window: 400, overlap: 128}
+      - {strategy: retrieve, window: 400, overlap: 128, top_k: 3}
+    slices: [phantom_grid_sub, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
+
+  # Context ablation (shortcut control): same detectors with an empty context. Cheap.
+  - name: hhem_ablate
+    detector: {type: hhem, max_length: 2560, batch_size: 32, precision: fp32}
+    strategies: [{strategy: truncate, window: 2048}]
+    ablate_context: true
+    slices: [phantom_seed_test, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_nli_ablate
+    detector: {type: seqcls, model: modernbert_nli, max_length: 2048, batch_size: 32}
+    strategies: [{strategy: truncate, window: 1536}]
+    ablate_context: true
+    slices: [phantom_seed_test, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]

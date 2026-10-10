@@ -46,7 +46,6 @@ from src.verify.slices import META_COLUMNS, get_slice
 logger = logging.getLogger(__name__)
 
 PRED_DIR = ARTIFACTS_DIR / "predictions"
-MANIFEST = PRED_DIR / "manifest.json"
 
 
 def load_config(path: str | Path) -> dict:
@@ -92,17 +91,30 @@ def expand_runs(cfg: dict) -> list[dict]:
     return jobs
 
 
-def _manifest() -> dict:
-    return read_json(MANIFEST) if MANIFEST.exists() else {}
+def output_dir(cfg: dict, limit: int | None = None) -> Path:
+    """Committed predictions go to artifacts/predictions; smoke configs and --limit runs go to scratch."""
+    if cfg.get("scratch") or limit is not None:
+        return RESULTS_DIR / "scratch_predictions"
+    return PRED_DIR
+
+
+def _manifest(pred_dir: Path = PRED_DIR) -> dict:
+    path = pred_dir / "manifest.json"
+    return read_json(path) if path.exists() else {}
+
+
+def _is_done(job: dict, man: dict, pred_dir: Path) -> bool:
+    return man.get(job["run_id"], {}).get("hash") == job["hash"] and (pred_dir / f"{job['run_id']}.parquet").exists()
 
 
 def config_runs_complete(path: str | Path) -> bool:
     try:
-        jobs = expand_runs(load_config(path))
+        cfg = load_config(path)
     except FileNotFoundError:
         return False
-    man = _manifest()
-    return all(man.get(j["run_id"], {}).get("hash") == j["hash"] and (PRED_DIR / f"{j['run_id']}.parquet").exists() for j in jobs)
+    pred_dir = output_dir(cfg)
+    man = _manifest(pred_dir)
+    return all(_is_done(j, man, pred_dir) for j in expand_runs(cfg))
 
 
 def build_detector(dcfg: dict, device: str) -> Detector:
@@ -170,10 +182,10 @@ def score_frame(df: pd.DataFrame, det: Detector, spec: ChunkSpec, hyp_fmt: str =
     return out
 
 
-def run_job(job: dict, det: Detector, limit: int | None = None) -> Path:
+def run_job(job: dict, det: Detector, limit: int | None = None, pred_dir: Path = PRED_DIR) -> Path:
     """Run one (run, strategy, slice) job part by part, resuming finished parts."""
     spec = ChunkSpec(**job["spec"])
-    shard_dir = RESULTS_DIR / "runs" / job["run_id"]
+    shard_dir = RESULTS_DIR / ("runs" if pred_dir == PRED_DIR else "scratch_runs") / job["run_id"]
     meta_path = shard_dir / "_job.json"
     if meta_path.exists() and read_json(meta_path).get("hash") != job["hash"]:
         logger.info("%s: config changed, discarding old shards", job["run_id"])
@@ -203,14 +215,14 @@ def run_job(job: dict, det: Detector, limit: int | None = None) -> Path:
     pred["detector"] = job["run"]
     pred["strategy"] = spec.tag() + ("__ablate" if job["ablate"] else "")
     pred["run_id"] = job["run_id"]
-    final = write_table(pred, PRED_DIR / f"{job['run_id']}.parquet")
-    man = _manifest()
+    final = write_table(pred, pred_dir / f"{job['run_id']}.parquet")
+    man = _manifest(pred_dir)
     man[job["run_id"]] = {
         "hash": job["hash"], "run": job["run"], "slice": job["slice"], "strategy": spec.tag(), "ablate": job["ablate"],
         "detector": det.describe(), "spec": job["spec"], "rows": int(len(pred)), "limit": limit or job.get("max_pairs"),
         "elapsed_s": round(time.time() - t0, 1), "git_commit": _git_commit(), "created": _dt.datetime.now().isoformat(timespec="seconds"),
     }
-    write_json(man, MANIFEST)
+    write_json(man, pred_dir / "manifest.json")
     return final
 
 
@@ -223,9 +235,10 @@ def run_config(path: str | Path, device: str = "auto", limit: int | None = None,
     jobs = expand_runs(cfg)
     if only:
         jobs = [j for j in jobs if j["run"] in only]
-    man = _manifest()
-    todo = [j for j in jobs if not (limit is None and man.get(j["run_id"], {}).get("hash") == j["hash"] and (PRED_DIR / f"{j['run_id']}.parquet").exists())]
-    logger.info("%s: %d jobs, %d to run", cfg.get("name", path), len(jobs), len(todo))
+    pred_dir = output_dir(cfg, limit)
+    man = _manifest(pred_dir)
+    todo = [j for j in jobs if not _is_done(j, man, pred_dir)]
+    logger.info("%s: %d jobs, %d to run -> %s", cfg.get("name", path), len(jobs), len(todo), pred_dir)
     if not todo:
         return
     dev = get_device(device)
@@ -236,5 +249,5 @@ def run_config(path: str | Path, device: str = "auto", limit: int | None = None,
         logger.info("Loading detector for run %r: %s", run_name, run_jobs[0]["detector"])
         det = build_detector(run_jobs[0]["detector"], dev)
         for j in run_jobs:
-            run_job(j, det, limit)
+            run_job(j, det, limit, pred_dir)
         del det

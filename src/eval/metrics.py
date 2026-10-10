@@ -88,19 +88,34 @@ METRIC_FNS: dict[str, Callable[[np.ndarray, np.ndarray, float], float]] = {
 }
 
 
+class _Clusters:
+    """Precomputed group layout so each bootstrap resample is a few vectorized numpy calls."""
+
+    def __init__(self, groups: np.ndarray):
+        _, inv = np.unique(np.asarray(groups), return_inverse=True)
+        self.order = np.argsort(inv, kind="stable")
+        self.sizes = np.bincount(inv)
+        self.starts = np.concatenate([[0], np.cumsum(self.sizes)[:-1]])
+        self.n = len(self.sizes)
+
+    def sample(self, rng: np.random.Generator) -> np.ndarray:
+        pick = rng.integers(0, self.n, self.n)
+        sizes = self.sizes[pick]
+        offsets = np.arange(sizes.sum()) - np.repeat(np.cumsum(sizes) - sizes, sizes)
+        return self.order[np.repeat(self.starts[pick], sizes) + offsets]
+
+
 def cluster_bootstrap(
     y: np.ndarray, p: np.ndarray, groups: np.ndarray, threshold: float, metrics: list[str],
     n_boot: int = 1000, seed: int = 0, alpha: float = 0.05,
 ) -> dict[str, tuple[float, float]]:
     """Percentile CIs from resampling whole groups (pairs) with replacement."""
     y, p = np.asarray(y), np.asarray(p)
-    uniq, inv = np.unique(np.asarray(groups), return_inverse=True)
-    members = [np.flatnonzero(inv == g) for g in range(len(uniq))]
+    cl = _Clusters(groups)
     rng = np.random.default_rng(seed)
     samples = {m: np.empty(n_boot) for m in metrics}
     for b in range(n_boot):
-        pick = rng.integers(0, len(uniq), len(uniq))
-        idx = np.concatenate([members[g] for g in pick])
+        idx = cl.sample(rng)
         for m in metrics:
             samples[m][b] = METRIC_FNS[m](y[idx], p[idx], threshold)
     return {m: (float(np.nanpercentile(s, 100 * alpha / 2)), float(np.nanpercentile(s, 100 * (1 - alpha / 2)))) for m, s in samples.items()}
@@ -113,12 +128,11 @@ def paired_bootstrap_diff(
     """CI and two-sided bootstrap p-value for metric(a) - metric(b) on the same rows."""
     fn = METRIC_FNS[metric]
     y, p_a, p_b = np.asarray(y), np.asarray(p_a), np.asarray(p_b)
-    uniq, inv = np.unique(np.asarray(groups), return_inverse=True)
-    members = [np.flatnonzero(inv == g) for g in range(len(uniq))]
+    cl = _Clusters(groups)
     rng = np.random.default_rng(seed)
     diffs = np.empty(n_boot)
     for b in range(n_boot):
-        idx = np.concatenate([members[g] for g in rng.integers(0, len(uniq), len(uniq))])
+        idx = cl.sample(rng)
         diffs[b] = fn(y[idx], p_a[idx], t_a) - fn(y[idx], p_b[idx], t_b)
     point = fn(y, p_a, t_a) - fn(y, p_b, t_b)
     p_two = 2 * min((diffs <= 0).mean(), (diffs >= 0).mean())

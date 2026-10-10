@@ -1,257 +1,110 @@
-# FastHalluCheck
+# FastHalluCheck v2: length-robust hallucination detection
 
-**Rapid Evaluation of Pretrained Hallucination Detectors on QA Benchmarks**
+**Research question.** How do hallucination detectors degrade as the context grows from a ~500-token passage to
+30K nominal tokens and as the evidence moves to the beginning, middle or end of the document, and does chunked or
+retrieval-based verification recover the loss?
 
-A systematic evaluation of hallucination detection methods across two benchmarks — HaluEval QA (general domain) and PHANTOM (financial long-context QA) — with threshold optimization, supervised fine-tuning, ensemble methods, and a deployable 3-tier decision policy.
+PHANTOM (Ji et al., NeurIPS 2025 D&B) makes this a controlled experiment. Its 10-K and DEF 14A filings come in
+seed, 2K, 5K, 10K, 20K and 30K-token versions, each with the evidence passage at the beginning, middle or end,
+and all versions reuse the seed's questions and answers. The paper evaluated generative LLMs only; encoder
+detectors on this grid have not been published.
+
+Every detector is reported next to **answer-only shortcut baselines**, because all three benchmarks can be partly
+solved without reading the context:
+
+| Test set | Answer-only length model (AUROC) | Answer-only TF-IDF (AUROC) |
+|---|---|---|
+| HaluEval QA | 0.982 | 0.968 |
+| RAGTruth | 0.685 | 0.808 |
+| PHANTOM 10-K + DEF 14A, all lengths (trained on 8-K/497K) | 0.835 | 0.957 |
+| PHANTOM hard subset (faithful answer >= 224 chars) | 0.732 | 0.888 |
+
+(`artifacts/metrics/shortcut_baselines.csv`, `metrics_long.csv`; reproduce with `python -m src.cli baselines && python -m src.cli evaluate`.)
 
 ## Team
 
-- **Vaishnav Ajai** — Dartmouth College, Thayer School of Engineering
-- **Kritesh Singh** — Dartmouth College, Thayer School of Engineering
-- **Prajwal Prasad** — Dartmouth College, Thayer School of Engineering
+Vaishnav Ajai, Kritesh Singh and Prajwal Prasad, Dartmouth College, Thayer School of Engineering.
 
-## Research Question
+## Why v2
 
-How effective are pretrained hallucination detection models at identifying unsupported answers in question-answering settings, and how can detection be improved through threshold optimization, supervised fine-tuning, and ensemble methods?
+The v1 pipeline (kept in `legacy/`) reported F1 0.964 for a fine-tuned DeBERTa and 0.982 for an ensemble on
+HaluEval, and a cross-domain drop on PHANTOM. An audit found that these numbers don't hold:
 
-## Results Summary
+- **HaluEval shortcut.** A 3-feature logistic regression on the answer alone (length, word count, trailing
+  period) reaches 0.97 accuracy, so the fine-tuned score is indistinguishable from a length rule.
+- **Contaminated ensemble.** The ensemble was scored on all 1,000 pairs, 800 of which were DeBERTa's training rows.
+- **Checkpoint chosen on the test set.**
+- **Label peeking.** Score polarity was set from the gold labels (`validate_scores`).
+- **Unknown PHANTOM data.** The loader requested file names with the wrong case and mapped every PHANTOM label to 0,
+  so the data behind the PHANTOM numbers is unknown.
+- **Truncated contexts.** The PHANTOM contexts were cut to 512 tokens, so the "cross-domain" drop is confounded
+  with never seeing the evidence.
+- **Not runnable from a clone.** `src/data/` was swallowed by an unanchored `data/` rule in `.gitignore`.
 
-### In-Domain (HaluEval QA, 1,000 evaluation pairs)
+## Design
 
-| Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
-|-------|----------|-----------|--------|----|---------|
-| HHEM zero-shot (t=0.50) | 0.7320 | 0.8816 | 0.5360 | 0.6667 | 0.7169 |
-| HHEM CV-optimized (t=0.57) | 0.7340 | 0.8462 | 0.5720 | 0.6826 | 0.7169 |
-| Fine-tuned DeBERTa-v3-small | 0.9650 | 0.9895 | 0.9400 | **0.9641** | 0.9764 |
-| Ensemble (avg) | 0.9820 | 0.9918 | 0.9720 | **0.9818** | 0.9849 |
+- **One score convention.** Every detector outputs `p_halluc` (higher = more likely hallucinated), converted once
+  inside its adapter.
+- **Same verification wrapper at every length.** `truncate` (first window, the v1 behaviour), `chunk` (overlapping
+  windows; the answer is faithful if any window supports it), `retrieve` (BM25 top-k windows). Window overlaps are
+  set from measured passage lengths so that the evidence passage fits whole in some window.
+- **Leak-free splits grouped by pair**, committed in `artifacts/splits.json`. PHANTOM 10-K/DEF 14A are test-only at
+  every length. Thresholds and model selection use validation slices only.
+- **Statistics.** Pair-clustered bootstrap CIs, paired bootstrap differences, McNemar tests and ECE.
+- **Reproducibility.** Pinned dataset and model revisions (`src/config.py`). Predictions store ids and scores only, so
+  they are committed and can be evaluated on any machine.
 
-### Cross-Domain (PHANTOM Financial QA, 500 pairs)
+## Detectors
 
-| Model | HaluEval F1 | PHANTOM F1 | F1 Drop |
-|-------|-------------|------------|---------|
-| HHEM optimized | 0.6826 | 0.6790 | -0.004 |
-| Fine-tuned DeBERTa-v3-small | 0.9641 | 0.5863 | -0.378 |
+| Role | Model |
+|---|---|
+| Shortcut controls | answer-length LR, answer TF-IDF LR, lexical support; context ablation of each model |
+| Zero-shot encoders | Vectara HHEM-2.1-open; `tasksource/ModernBERT-base-nli`; `MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`; LettuceDetect (ModernBERT) |
+| Fine-tuned (main) | ModernBERT-base from the NLI checkpoint, positions extended to 8K, distractor augmentation, 3 seeds; DeBERTa-v3-base NLI (512-token comparison) |
+| LLM judges | Qwen3-4B-Instruct-2507 (4-bit, laptop), Qwen3-8B (Kaggle); API: Dartmouth Chat, Gemini (secondary) |
 
-**Key finding:** Task-specific training matters more than model scale. Cross-domain evaluation reveals significant degradation, confirming domain adaptation is essential.
-
----
-
-## Architecture
-
-The project follows a layered architecture with clear separation of concerns:
-
-```
-hallucination-project/
-├── app.py                          # Streamlit dashboard entry point
-├── run_all.py                      # Pipeline runner (routes to CLI)
-├── requirements.txt                # Python dependencies
-│
-├── src/                            # New layered architecture
-│   ├── data/                       # DATA LAYER
-│   │   ├── loaders.py              # Dataset loaders (HaluEval, PHANTOM)
-│   │   ├── normalization.py        # Normalize raw data to standard format
-│   │   └── store.py                # Unified CSV/JSON read/write
-│   │
-│   ├── services/                   # BUSINESS LOGIC LAYER
-│   │   ├── metrics.py              # Classification metrics (single source of truth)
-│   │   ├── inference.py            # HHEM + DeBERTa model inference
-│   │   ├── threshold.py            # Threshold sweep + CV optimization
-│   │   ├── analysis.py             # Error analysis + hallucination typing
-│   │   ├── ensemble.py             # Ensemble prediction methods
-│   │   └── policy.py               # 3-tier ANSWER/CAVEAT/ABSTAIN policy
-│   │
-│   ├── display/                    # DISPLAY LAYER (static output)
-│   │   ├── figures.py              # All matplotlib/seaborn plot functions
-│   │   ├── tables.py               # Markdown table formatters
-│   │   └── report_generator.py     # Assemble final report from metrics
-│   │
-│   ├── dashboard/                  # DISPLAY LAYER (interactive)
-│   │   ├── state.py                # Centralized Streamlit session state
-│   │   ├── components.py           # Reusable UI components (cards, charts, tables)
-│   │   ├── config.py               # Colors, labels, file paths
-│   │   └── pages/
-│   │       ├── overview.py         # Project summary + key metrics
-│   │       ├── explorer.py         # Browse/filter/search predictions
-│   │       ├── threshold_tuner.py  # Interactive threshold slider
-│   │       ├── error_browser.py    # FP/FN browser with detail view
-│   │       ├── model_comparison.py # Side-by-side model evaluation
-│   │       └── cross_domain.py     # HaluEval vs PHANTOM analysis
-│   │
-│   └── cli/                        # CLI LAYER
-│       └── commands.py             # Unified CLI: run, evaluate, analyze, report, compare, dashboard
-│
-├── legacy/                         # Original flat scripts (Phases 1-2)
-│   ├── README.md                   # Legacy documentation
-│   ├── src/                        # 17 original pipeline scripts
-│   ├── run_all.py                  # Original pipeline runner
-│   └── setup.py                    # Original setup script
-│
-├── data/                           # Normalized datasets (generated)
-├── results/                        # Predictions + metrics (generated)
-├── figures/                        # Static visualizations (generated)
-├── models/                         # Fine-tuned model checkpoints
-└── report/                         # Generated NeurIPS-style report
-```
-
-### Layer Responsibilities
-
-| Layer | Directory | Responsibility | Depends On |
-|-------|-----------|---------------|------------|
-| **Data** | `src/data/` | Load datasets, read/write CSV/JSON | File system |
-| **Services** | `src/services/` | All computation — metrics, inference, analysis | Data layer |
-| **Display** | `src/display/` | Static figures + markdown report | Services layer |
-| **Dashboard** | `src/dashboard/` | Interactive Streamlit UI | Services + Display |
-| **CLI** | `src/cli/` | Command-line interface | Services + Display |
-
-No layer reaches down more than one level. Dashboard and CLI both call Services; they never touch Data directly.
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.10+
-- NVIDIA GPU with CUDA (recommended: RTX 4070+ with 8GB VRAM)
-- ~3GB disk space for downloaded datasets, model weights, and generated results
-
-### Setup
+## Quick start
 
 ```bash
-git clone https://github.com/vaishnav-16/llm-hallucination-detection.git
-cd llm-hallucination-detection
-pip install -r requirements.txt
+pip install -r requirements.txt     # CPU; for the RTX 4070 see HANDOFF.md
+python -m src.cli prepare           # ~5 min: datasets at pinned revisions, splits check, data card
+python -m pytest
+python -m src.cli status            # what is done, what is left, and where each stage must run
+python -m src.cli baselines         # shortcut audit (CPU, ~2 min)
+python -m src.cli smoke             # every stage on a few rows (CPU, ~15 min)
 ```
 
-### Run
+GPU stages (fine-tuning, the zero-shot and fine-tuned grids, the Qwen judge) run on the laptop. **See
+[HANDOFF.md](HANDOFF.md)** for the Windows runbook, priorities and time estimates. Afterwards:
 
 ```bash
-python run_all.py           # Full pipeline (~20–25 min on RTX 4070)
-streamlit run app.py        # Launch interactive dashboard after results exist
+python -m src.cli evaluate && python -m src.cli report    # -> artifacts/metrics/, report/final_report.md
 ```
 
-The dashboard has 6 pages: Overview, Data Explorer, Threshold Tuner, Error Browser, Model Comparison, and Cross-Domain Analysis.
+## Repository layout
 
----
-
-## Reproducing Results
-
-The repository ships **source code only** — datasets and generated outputs are regenerated locally. Fine-tuned model weights are available on Hugging Face Hub so you can skip the ~15-minute training step.
-
-### Option A — Skip training (fastest)
-
-Download the pretrained fine-tuned models from HF Hub and run evaluation only:
-
-```bash
-pip install huggingface_hub
-python -c "from huggingface_hub import snapshot_download; \
-  snapshot_download('vaishnav-16/fasthallucheck-deberta-halueval', \
-    local_dir='models/deberta-hallucination-detector'); \
-  snapshot_download('vaishnav-16/fasthallucheck-deberta-phantom', \
-    local_dir='models/deberta-phantom-finetuned')"
-
-python legacy/src/load_data.py                # Download HaluEval
-python legacy/src/run_hhem.py                 # HHEM zero-shot inference
-python legacy/src/evaluate_results.py         # Compute metrics
-python -m src.cli.commands report             # Generate report
-streamlit run app.py                          # Launch dashboard
+```
+configs/      experiment configs (YAML)          artifacts/   committed results: splits, data card, predictions, metrics, figures
+src/data/     loaders, schema, splits            report/      generated report
+src/detectors detector adapters + baselines      tests/       offline pytest suite
+src/verify/   chunking, slices, resumable runner notebooks/   Kaggle notebook for the 8B judge
+src/train/    fine-tuning + augmentation         legacy/      v1 pipeline (reference only)
+src/eval/     metrics, thresholds, evaluation
+src/display/  report generator
 ```
 
-### Option B — Full reproduction from scratch
+`data/`, `models/` and `results/` are regenerated and git-ignored. Fine-tuned weights are published to the Hugging
+Face Hub with `scripts/upload_models.py`.
 
-```bash
-python run_all.py
-```
+## Data notes
 
-Downloads HaluEval and PHANTOM from Hugging Face Hub, runs HHEM inference, fine-tunes DeBERTa-v3-small on both datasets, and writes all predictions, metrics, figures, and the final report. End-to-end ~20–25 min on an RTX 4070.
-
-### Partial reproduction
-
-Run individual stages via the unified CLI:
-
-```bash
-python -m src.cli.commands run          # Same as run_all.py
-python -m src.cli.commands evaluate     # Recompute metrics from existing predictions
-python -m src.cli.commands analyze      # Error analysis (FP/FN browser)
-python -m src.cli.commands report       # Regenerate markdown report
-python -m src.cli.commands compare      # Print model comparison table
-python -m src.cli.commands dashboard    # Launch Streamlit dashboard
-```
-
-### Just want the dashboard?
-
-The dashboard reads from `results/` and `figures/`. You must run the pipeline at least once (any of the paths above) before `streamlit run app.py` will show populated visualizations.
-
----
-
-## Artifacts
-
-What ships in the repo vs. what gets generated locally:
-
-| Artifact | In repo? | How to obtain |
-|---|---|---|
-| Source code (`src/`, `legacy/`, `app.py`) | Yes | `git clone` |
-| HaluEval QA dataset | No | Auto-downloaded from HF Hub (`pminervini/HaluEval`) by the data loader |
-| PHANTOM dataset | No | Auto-downloaded from HF Hub (`seyled/Phantom_Hallucination_Detection`) |
-| HHEM zero-shot weights | No | Auto-downloaded from HF Hub (`vectara/hallucination_evaluation_model`) |
-| Fine-tuned DeBERTa (HaluEval) | No | HF Hub: [`vaishnav-16/fasthallucheck-deberta-halueval`](https://huggingface.co/vaishnav-16/fasthallucheck-deberta-halueval) — or regenerate via `python run_all.py` |
-| Fine-tuned DeBERTa (PHANTOM) | No | HF Hub: [`vaishnav-16/fasthallucheck-deberta-phantom`](https://huggingface.co/vaishnav-16/fasthallucheck-deberta-phantom) — or regenerate via `python run_all.py` |
-| Predictions / metrics / figures / report | No | Regenerated by `python run_all.py` |
-
-> **Publishing updated weights.** Project maintainers: after retraining, push new checkpoints to HF Hub with `python scripts/upload_models.py --username vaishnav-16`.
-
----
-
-## Software Design Patterns
-
-### 1. Separation of Concerns
-Each layer has a single responsibility. Business logic never touches the UI; the UI never reads files directly.
-
-### 2. State Management
-`src/dashboard/state.py` provides centralized session state with lazy loading, `@st.cache_data` for expensive operations, and derived state invalidation when inputs change (e.g., threshold slider).
-
-### 3. Data Flow
-```
-User Action → SessionState → Services Layer → Display Layer → Streamlit UI
-```
-
-### 4. APIs & Integrations
-Services expose a clean functional API:
-```python
-from src.services.metrics import compute_metrics, compute_metrics_at_threshold
-from src.services.inference import predict_hhem, predict_finetuned
-from src.services.analysis import get_errors, categorize_hallucination
-```
-
-### 5. Error Handling
-Graceful degradation throughout — missing files show informative messages, CUDA OOM triggers batch size reduction, model loading failures fall through to alternatives.
-
-### 6. UX Patterns
-Consistent color palette (blue=faithful, red=hallucinated), interactive Plotly charts with hover tooltips, `st.metric` cards with delta indicators, paginated data tables, and keyboard-navigable controls.
-
----
-
-## Models Used
-
-| Model | Params | Role | Source |
-|-------|--------|------|--------|
-| Vectara HHEM v2 | 86M | Zero-shot hallucination detector | `vectara/hallucination_evaluation_model` |
-| DeBERTa-v3-small | 44M | Fine-tuned binary classifier | `microsoft/deberta-v3-small` |
-
-## Datasets
-
-| Dataset | Source | Domain | N pairs | Avg Context |
-|---------|--------|--------|---------|-------------|
-| HaluEval QA | `pminervini/HaluEval` | General (Wikipedia) | 1,000 | 334 chars |
-| PHANTOM 10K | `seyled/Phantom_Hallucination_Detection` | Financial (SEC) | 500 | 64,204 chars |
-
-## Hardware
-
-- **GPU:** NVIDIA RTX 4070 Laptop (8GB VRAM)
-- **RAM:** 16GB
-- **OS:** Windows 11
-- **Python:** 3.13
+- **PHANTOM labels** are the strings "hallucination" / "not hallucination". File names are case-sensitive
+  (`Phantom_10k_seed.csv`, `Phantom_def14A_2000tokens_middle.csv`).
+- **DEF 14A long files** regenerate the answers for about a third of the pairs relative to the seed; these rows are tagged
+  `variant=reanswered`. The 10-K long files match the seed exactly.
+- **Seed passages** are about 600 tokens at the median and up to ~1,700 under encoder tokenizers, so they don't fit a
+  512-token window. The "30000-token" files are 35-45K tokens. See `artifacts/data_card.md`.
 
 ## License
 
-This project is for academic use (Dartmouth College coursework).
+Academic use (Dartmouth College coursework). Datasets and models keep their own licenses.

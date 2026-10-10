@@ -61,3 +61,16 @@ def test_threshold_and_platt(data):
     assert 0 < t < 1
     a, b = fit_platt(y, p)
     assert ece(y, apply_platt(p, a, b)) <= ece(y, p) + 1e-6
+
+
+def test_cluster_sampling_keeps_groups_whole():
+    from src.eval.metrics import _Clusters
+
+    groups = np.array([5, 5, 1, 9, 9, 9, 1])
+    cl = _Clusters(groups)
+    idx = cl.sample(np.random.default_rng(0))
+    assert idx.min() >= 0 and idx.max() < len(groups)
+    picked = groups[idx]
+    for g in np.unique(picked):
+        size = (groups == g).sum()
+        assert (picked == g).sum() % size == 0  # every sampled group appears whole

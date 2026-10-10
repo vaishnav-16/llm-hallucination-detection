@@ -6,6 +6,7 @@ restarts at the cell it was in rather than from scratch.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Callable
 
@@ -62,6 +63,13 @@ def get_slice(name: str, max_pairs: int | None = None) -> list[Part]:
             return limit(df).reset_index(drop=True)
         return load
 
+    if name.startswith("cell-"):  # one PHANTOM test cell, e.g. cell-phantom_10k_30000_middle (smoke tests)
+        key = name[len("cell-"):]
+        return [Part(name, key, table(key, "test"))]
+    m = re.fullmatch(r"phantom_grid_(sub|full)_min(\d+)", name)  # e.g. phantom_grid_sub_min20000: long cells only
+    if m:
+        cells = [c for c in _phantom_cells(phantom.TEST_FILINGS, include_seed=False) if c.target_tokens >= int(m.group(2))]
+        return [Part(name, c.key, table(c.key, "test", sub=(m.group(1) == "sub"))) for c in cells]
     if name in ("phantom_grid_sub", "phantom_grid_full", "phantom_seed_test"):
         cells = _phantom_cells(phantom.TEST_FILINGS, include_long=(name != "phantom_seed_test"))
         return [Part(name, c.key, table(c.key, "test", sub=(name == "phantom_grid_sub"))) for c in cells]

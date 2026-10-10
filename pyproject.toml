@@ -24,15 +24,15 @@ dependencies = [
 # CPU inference (cloud session / smoke tests). Install torch from the CPU index if you want a small wheel.
 models = [
     "torch>=2.3",
-    "transformers>=4.48",   # >=4.48 needed for ModernBERT
+    "transformers>=4.48,<6",   # >=4.48 needed for ModernBERT; 4.x and 5.x both supported
     "safetensors>=0.4",
     "sentencepiece>=0.2",
     "protobuf>=4",
+    "accelerate>=1.1",       # required by transformers.Trainer, also on CPU
 ]
 # Local RTX 4070 (Windows): fine-tuning + 4-bit LLM judge. Install a CUDA torch wheel first (see HANDOFF.md).
 gpu = [
     "fasthallucheck[models]",
-    "accelerate>=0.30",
     "bitsandbytes>=0.43",
 ]
 api = ["requests>=2.31", "python-dotenv>=1.0"]

@@ -1,0 +1,11 @@
+# Qwen3-8B judge for Kaggle (2 x T4, fp16 split across both GPUs). Whole 30K contexts fit in a 48K window.
+# Only the 20K/30K cells (where the 4B laptop judge must chunk), 50 pairs per cell: ~13 h of T4 time.
+# Used by notebooks/kaggle_judge.ipynb.
+name: judge_qwen8b
+runs:
+  - name: qwen3_8b
+    detector: {type: local_llm, model: qwen3_8b, load_in_4bit: false, device_map: auto, max_length: 49152, batch_size: 1}
+    strategies:
+      - {strategy: chunk, window: 48000, overlap: 2048}
+    slices: [phantom_grid_sub_min20000]
+    max_pairs: 50
