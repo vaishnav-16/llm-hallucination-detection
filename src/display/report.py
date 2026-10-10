@@ -231,6 +231,13 @@ def generate_report() -> Path:
                 c = comp[comp["group"] == "all"][["detector", "slice", "a", "b", "n", "diff", "ci_lo", "ci_hi", "p_value"]]
                 sections.append("\n### Paired comparisons (AUROC difference a - b, same rows)\n\n" + _md_table(c) + "\n")
 
+    seeds_path = METRICS_DIR / "seed_summary.csv"
+    if seeds_path.exists() and seeds_path.stat().st_size > 1:
+        ss = read_table(seeds_path)
+        if not ss.empty:
+            ss = ss[ss["metric"] == "auroc"][["base", "strategy", "slice", "group", "n_seeds", "mean", "sd"]]
+            sections.append("\n### Seed variation (AUROC mean and sd over training seeds)\n\n" + _md_table(ss) + "\n")
+
     train_logs = sorted((ARTIFACTS_DIR / "training").glob("*.json"))
     if train_logs:
         rows = []

@@ -12,7 +12,7 @@ from typing import Sequence
 import numpy as np
 
 from src.config import MODELS, ROOT
-from src.detectors.base import Detector, run_batched
+from src.detectors.base import Detector, fit_premise, run_batched
 from src.verify.chunking import SpanFn, hf_span_fn
 
 logger = logging.getLogger(__name__)
@@ -64,15 +64,28 @@ class HHEMDetector(_HFDetector):
         self.model.t5.to(device).eval()
         self.tokenizer = self.model.tokenzier  # (sic) attribute name in HHEM's remote code
         self.prompt = self.model.prompt
+        self.n_truncated = 0
+
+    def _format(self, premise: str, hypothesis: str) -> str:
+        """HHEM prompt with the premise cut to fit, so truncation never removes the hypothesis."""
+        overhead = len(self.tokenizer(self.prompt.format(text1="", text2=hypothesis))["input_ids"])
+        premise, cut = fit_premise(self.tokenizer, premise, self.max_length - overhead - 8)  # margin: boundary tokens can merge differently
+        if cut:
+            self.n_truncated += 1
+        return self.prompt.format(text1=premise, text2=hypothesis)
 
     def _score_batch(self, pairs):
         torch = _torch()
-        texts = [self.prompt.format(text1=p, text2=h) for p, h in pairs]
-        enc = self.tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=self.max_length).to(self.device)
+        texts = [self._format(p, h) for p, h in pairs]
+        enc = self.tokenizer(texts, return_tensors="pt", padding=True).to(self.device)
         with torch.no_grad():
             logits = self.model.t5(**enc).logits[:, 0, :]
         consistency = torch.softmax(logits.float(), dim=-1)[:, 1]
         return (1.0 - consistency).cpu().numpy()
+
+
+    def describe(self) -> dict:
+        return {**super().describe(), "premises_truncated": self.n_truncated}
 
 
 class SequenceClassifierDetector(_HFDetector):

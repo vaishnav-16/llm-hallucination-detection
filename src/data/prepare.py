@@ -37,6 +37,12 @@ def prepare(rebuild_splits: bool = False, measure_tokens: bool = True, filings: 
     hal = load_halueval("original")
     write_table(hal, NORM_DIR / "halueval.parquet")
     slices["halueval"] = cell_stats(hal)
+    from src.data.normalize_answers import REWRITES_PATH
+
+    if REWRITES_PATH.exists():  # rewrites are committed; rebuild the git-ignored table on every machine
+        hal_norm = load_halueval("normalized")
+        write_table(hal_norm, NORM_DIR / "halueval_normalized.parquet")
+        slices["halueval_normalized"] = cell_stats(hal_norm)
 
     logger.info("Loading RAGTruth...")
     rt_train, rt_test = load_ragtruth("train"), load_ragtruth("test")

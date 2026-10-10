@@ -17,7 +17,7 @@ import numpy as np
 
 from src.config import MODELS
 from src.detectors.api_judge import JUDGE_SYSTEM, JUDGE_USER
-from src.detectors.base import Detector, run_batched
+from src.detectors.base import Detector, fit_premise, run_batched
 from src.verify.chunking import SpanFn, hf_span_fn
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,14 @@ class LocalLLMJudge(Detector):
         self.model = AutoModelForCausalLM.from_pretrained(spec["repo_id"], **kw).eval()
         if "device_map" not in kw:
             self.model.to(device)
+        import inspect
+
+        fwd = inspect.signature(self.model.forward).parameters
+        # Only the last position's logits are needed; materialising all of them costs ~4 GB at 12K tokens.
+        self.keep_kw = next((k for k in ("logits_to_keep", "num_logits_to_keep") if k in fwd), None)
+        if self.keep_kw is None:
+            logger.warning("%s: model.forward has no logits_to_keep; long prompts may run out of memory", self.name)
+        self.n_truncated = 0
         self.yes_ids = self._token_ids(["Yes", " Yes", "yes"])
         self.no_ids = self._token_ids(["No", " No", "no"])
 
@@ -70,9 +78,16 @@ class LocalLLMJudge(Detector):
         return hf_span_fn(self.tokenizer)
 
     def describe(self) -> dict:
-        return {**super().describe(), "model": self.name}
+        return {**super().describe(), "model": self.name, "premises_truncated": self.n_truncated}
 
     def _prompt(self, premise: str, hypothesis: str) -> str:
+        overhead = len(self.tokenizer(self._chat("", hypothesis), add_special_tokens=False)["input_ids"])
+        premise, cut = fit_premise(self.tokenizer, premise, self.max_length - overhead - 8)  # margin: boundary tokens can merge differently
+        if cut:
+            self.n_truncated += 1
+        return self._chat(premise, hypothesis)
+
+    def _chat(self, premise: str, hypothesis: str) -> str:
         msgs = [{"role": "system", "content": JUDGE_SYSTEM},
                 {"role": "user", "content": JUDGE_USER.format(premise=premise, hypothesis=hypothesis)}]
         try:
@@ -84,9 +99,10 @@ class LocalLLMJudge(Detector):
         import torch
 
         texts = [self._prompt(p, h) for p, h in pairs]
-        enc = self.tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=self.max_length).to(self.model.device)
+        enc = self.tokenizer(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(self.model.device)
+        kw = {self.keep_kw: 1} if self.keep_kw else {}
         with torch.no_grad():
-            logits = self.model(**enc).logits[:, -1, :].float()
+            logits = self.model(**enc, **kw).logits[:, -1, :].float()
         probs = torch.softmax(logits, dim=-1)
         p_yes = probs[:, self.yes_ids].sum(dim=1)
         p_no = probs[:, self.no_ids].sum(dim=1)

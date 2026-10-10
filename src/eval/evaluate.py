@@ -100,6 +100,7 @@ def evaluate_all(n_boot: int = 1000, n_boot_cells: int = 200, pred_dir=ARTIFACTS
     write_table(long, out_dir / "metrics_long.csv")
     write_table(_comparisons(preds), out_dir / "comparisons.csv")
     write_table(headline(long), out_dir / "headline.csv")
+    write_table(seed_summary(long), out_dir / "seed_summary.csv")
     return long
 
 
@@ -144,3 +145,16 @@ def headline(long: pd.DataFrame) -> pd.DataFrame:
     h["col"] = h["slice"] + h["group"].map(lambda g: "" if g == "all" else f" ({g})")
     h["cell"] = h.apply(lambda r: f"{r['value']:.3f} [{r['ci_lo']:.3f}, {r['ci_hi']:.3f}]", axis=1)
     return h.pivot_table(index=["detector", "strategy"], columns="col", values="cell", aggfunc="first").reset_index()
+
+
+def seed_summary(long: pd.DataFrame) -> pd.DataFrame:
+    """Mean and sd over training seeds for runs named <base>_s<seed> (same strategy, slice and group)."""
+    m = long[long["metric"].isin(["auroc", "f1", "balanced_accuracy"]) & long["group"].isin(["all", "hard"])].copy()
+    ext = m["detector"].str.extract(r"^(?P<base>.+)_s(?P<seed>\d+)$")
+    m = m.join(ext).dropna(subset=["base"])
+    cols = ["base", "strategy", "slice", "group", "metric", "n_seeds", "mean", "sd"]
+    if m.empty:
+        return pd.DataFrame(columns=cols)
+    g = m.groupby(["base", "strategy", "slice", "group", "metric"])["value"]
+    out = pd.DataFrame({"n_seeds": g.size(), "mean": g.mean(), "sd": g.std(ddof=1)}).reset_index()
+    return out[out["n_seeds"] > 1][cols]

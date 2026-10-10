@@ -46,6 +46,16 @@ class Detector(ABC):
         return {"name": self.name, "requires": self.requires, "max_length": self.max_length}
 
 
+def fit_premise(tokenizer, premise: str, budget: int) -> tuple[str, bool]:
+    """Cut ``premise`` to at most ``budget`` tokens (keeping its beginning). Returns (text, was_cut)."""
+    if budget <= 0:
+        raise ScoringError(f"no token budget left for the premise (budget {budget}); the claim alone is too long")
+    enc = tokenizer(premise, add_special_tokens=False, return_offsets_mapping=True, verbose=False)
+    if len(enc["input_ids"]) <= budget:
+        return premise, False
+    return premise[: enc["offset_mapping"][budget - 1][1]], True
+
+
 def run_batched(
     items: Sequence,
     fn: Callable[[Sequence], np.ndarray],

@@ -39,6 +39,17 @@ def _preds_for(config: str) -> Callable[[], bool]:
     return check
 
 
+def _newer_than_predictions(path: Path) -> Callable[[], bool]:
+    """Done only if ``path`` exists and was written after the latest prediction or baseline file."""
+    def check() -> bool:
+        if not path.exists():
+            return False
+        inputs = list(PRED_DIR.glob("*.parquet")) + [PRED_DIR / "manifest.json"]
+        latest = max((p.stat().st_mtime for p in inputs if p.exists()), default=0.0)
+        return path.stat().st_mtime >= latest
+    return check
+
+
 STAGES: list[Stage] = [
     Stage("prepare", "cpu", "python -m src.cli prepare",
           [DATA_DIR / "normalized" / "halueval.parquet", ARTIFACTS_DIR / "splits.json", ARTIFACTS_DIR / "data_card.md"],
@@ -57,8 +68,10 @@ STAGES: list[Stage] = [
           done_fn=_preds_for("finetuned_grid.yaml")),
     Stage("judge-local", "gpu", "python -m src.cli score --config configs/judge_qwen4b.yaml --device cuda",
           done_fn=_preds_for("judge_qwen4b.yaml"), note="optional; Qwen3-8B at 30K runs on Kaggle (notebooks/kaggle_judge.ipynb)"),
-    Stage("evaluate", "cpu", "python -m src.cli evaluate", [ARTIFACTS_DIR / "metrics" / "metrics_long.csv"]),
-    Stage("report", "cpu", "python -m src.cli report", [REPORT_DIR / "final_report.md"]),
+    Stage("evaluate", "cpu", "python -m src.cli evaluate", note="rerun after any new predictions",
+          done_fn=_newer_than_predictions(ARTIFACTS_DIR / "metrics" / "metrics_long.csv")),
+    Stage("report", "cpu", "python -m src.cli report", note="rerun after evaluate",
+          done_fn=_newer_than_predictions(REPORT_DIR / "final_report.md")),
 ]
 
 

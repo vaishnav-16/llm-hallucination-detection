@@ -74,3 +74,16 @@ def test_cluster_sampling_keeps_groups_whole():
     for g in np.unique(picked):
         size = (groups == g).sum()
         assert (picked == g).sum() % size == 0  # every sampled group appears whole
+
+
+def test_seed_summary_pools_seed_runs():
+    import pandas as pd
+
+    from src.eval.evaluate import seed_summary
+
+    rows = [{"detector": f"mb_ft_s{s}", "strategy": "chunk", "slice": "phantom_grid_sub", "group": "all", "metric": "auroc", "value": v}
+            for s, v in ((42, 0.80), (43, 0.84), (44, 0.82))]
+    rows.append({"detector": "hhem", "strategy": "chunk", "slice": "phantom_grid_sub", "group": "all", "metric": "auroc", "value": 0.7})
+    out = seed_summary(pd.DataFrame(rows))
+    assert len(out) == 1 and out.iloc[0]["n_seeds"] == 3
+    assert out.iloc[0]["mean"] == pytest.approx(0.82) and out.iloc[0]["sd"] == pytest.approx(0.02)
