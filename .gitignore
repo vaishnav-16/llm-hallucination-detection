@@ -2,16 +2,17 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 *.egg-info/
-dist/
-build/
+/dist/
+/build/
 .env
+.pytest_cache/
 
-# Generated outputs — too large for git, regenerate by running the pipeline
-models/
-data/
-results/
-figures/
-report/
+# Generated data, checkpoints and scratch outputs: regenerate with `python -m src.cli prepare`.
+# Anchored with a leading "/" so that source packages such as src/data/ are NOT ignored.
+/data/
+/models/
+/results/
+/figures/
 
 # Large binary model files (safety net)
 *.safetensors
@@ -19,3 +20,5 @@ report/
 *.bin
 *.ckpt
 *.h5
+
+# NOTE: /artifacts/ (splits, predictions, metrics, figures) and /report/ ARE committed.

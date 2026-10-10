@@ -1,0 +1,21 @@
+# API providers for LLM judges and the HaluEval rewrite.
+# Keys come from environment variables (put them in .env, which git ignores), never from this file.
+# Run `python -m src.cli probe-api` first: it lists available models and checks context length and logprobs.
+# Then pin `model` below to a dated model id from the probe output.
+
+dartmouth:
+  base_url: https://chat.dartmouth.edu/api       # Open WebUI, OpenAI-compatible: /chat/completions, /models
+  api_key_env: DARTMOUTH_CHAT_API_KEY             # create under Settings > Account > API keys on chat.dartmouth.edu
+  model: null                                     # pin after probing; prefer a local (on-prem) model, e.g. a Llama/Mistral id
+  probability: logprobs                           # logprobs | sampling | verbalized  (probe tells which works)
+  requests_per_minute: 30
+  max_context_tokens: null                        # filled in from the probe
+
+gemini:
+  base_url: https://generativelanguage.googleapis.com/v1beta/openai
+  api_key_env: GEMINI_API_KEY                     # https://aistudio.google.com/apikey (free tier)
+  model: null                                     # pin a dated Flash-Lite id from the probe
+  probability: sampling                           # 3.x models reportedly no longer return logprobs
+  samples: 5
+  requests_per_minute: 10
+  max_context_tokens: null

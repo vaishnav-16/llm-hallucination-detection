@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fasthallucheck"
+version = "2.0.0"
+description = "Length-robust hallucination detection: HaluEval, RAGTruth and the PHANTOM long-context grid"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyarrow>=15",
+    "scikit-learn>=1.4",
+    "pyyaml>=6",
+    "huggingface_hub>=0.23",
+    "rank_bm25>=0.2.2",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+# CPU inference (cloud session / smoke tests). Install torch from the CPU index if you want a small wheel.
+models = [
+    "torch>=2.3",
+    "transformers>=4.48",   # >=4.48 needed for ModernBERT
+    "safetensors>=0.4",
+    "sentencepiece>=0.2",
+    "protobuf>=4",
+]
+# Local RTX 4070 (Windows): fine-tuning + 4-bit LLM judge. Install a CUDA torch wheel first (see HANDOFF.md).
+gpu = [
+    "fasthallucheck[models]",
+    "accelerate>=0.30",
+    "bitsandbytes>=0.43",
+]
+api = ["requests>=2.31", "python-dotenv>=1.0"]
+dashboard = ["streamlit>=1.30", "plotly>=5.18"]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

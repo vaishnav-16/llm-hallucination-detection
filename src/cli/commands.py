@@ -1,215 +1,155 @@
-"""Unified CLI for FastHalluCheck pipeline.
+"""Unified command-line interface: ``python -m src.cli <command> [options]``.
 
-Usage:
-    python -m src.cli.commands run          # Full pipeline
-    python -m src.cli.commands evaluate     # Compute metrics
-    python -m src.cli.commands analyze      # Error analysis
-    python -m src.cli.commands report       # Generate report
-    python -m src.cli.commands compare      # Model comparison
-    python -m src.cli.commands dashboard    # Launch Streamlit dashboard
+Commands:
+  prepare            download + normalize datasets, build splits and the data card     (cpu)
+  baselines          answer-only / lexical / ablation shortcut baselines              (cpu)
+  rewrite-halueval   label-blind answer rewrite for the normalized HaluEval variant    (api)
+  probe-api          check context limit, logprobs and latency of configured APIs     (api)
+  score              run detectors x strategies from a YAML config                    (cpu / gpu / api)
+  finetune           fine-tune an encoder from a YAML config                          (gpu)
+  evaluate           metrics with bootstrap CIs, McNemar tests, calibration          (cpu)
+  report             regenerate report/final_report.md and figures                    (cpu)
+  status             show which stages are done and where the rest must run
+  smoke              tiny end-to-end run of every stage on CPU
 """
 
+from __future__ import annotations
+
 import argparse
-import json
 import logging
-import os
-import subprocess
 import sys
+import traceback
 
-import numpy as np
-import pandas as pd
+from src.config import setup_logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
-)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("src.cli")
 
 
-def cmd_run(args):
-    """Run the full pipeline using legacy scripts."""
-    steps = [
-        ("1/5", "Loading dataset", "legacy/src/load_data.py"),
-        ("2/5", "Running HHEM inference", "legacy/src/run_hhem.py"),
-        ("3/5", "Computing metrics", "legacy/src/evaluate_results.py"),
-        ("4/5", "Error analysis", "legacy/src/error_analysis.py"),
-        ("5/5", "Generating report", "legacy/src/generate_report.py"),
-    ]
+def cmd_prepare(args: argparse.Namespace) -> None:
+    from src.data.prepare import prepare
 
-    print("=" * 50)
-    print("  FastHalluCheck — Full Pipeline")
-    print("=" * 50)
-
-    for step_num, desc, script in steps:
-        print(f"\n[{step_num}] {desc}...")
-        if not os.path.exists(script):
-            print(f"  ERROR: {script} not found. Skipping.")
-            continue
-        result = subprocess.run([sys.executable, script])
-        if result.returncode != 0:
-            print(f"  WARNING: {script} exited with code {result.returncode}")
-
-    print("\n" + "=" * 50)
-    print("  Pipeline complete!")
-    print("=" * 50)
+    prepare(rebuild_splits=args.rebuild_splits, measure_tokens=not args.no_tokens)
 
 
-def cmd_evaluate(args):
-    """Compute metrics from predictions."""
-    from src.services.metrics import compute_metrics, compute_metrics_at_threshold, get_classification_report
-    from src.data.store import read_predictions, save_metrics
+def cmd_status(args: argparse.Namespace) -> None:
+    from src.pipeline import status_rows
 
-    input_path = args.input or "results/hhem_predictions.csv"
-    df = read_predictions(input_path)
-    if df is None:
-        logger.error(f"No predictions found at {input_path}. Run the pipeline first.")
-        return
-
-    y_true = df["label"].values
-    score_col = "hhem_score" if "hhem_score" in df.columns else "predicted_prob"
-    scores = df[score_col].values
-
-    threshold = args.threshold or 0.5
-    metrics = compute_metrics_at_threshold(y_true, scores, threshold)
-    report = get_classification_report(y_true, np.where(scores > threshold, 0, 1))
-
-    print("\n=== METRICS ===")
-    for k, v in metrics.items():
-        if k != "label":
-            print(f"  {k}: {v}")
-    print(f"\n{report}")
-
-    output = args.output or "results/metrics.json"
-    save_metrics(metrics, output)
+    rows = status_rows()
+    print(f"\n{'stage':<18} {'needs':<8} {'done':<5} command")
+    print("-" * 100)
+    for r in rows:
+        mark = "yes" if r["done"] else "-"
+        print(f"{r['stage']:<18} {r['requires']:<8} {mark:<5} {r['command']}")
+        if r["note"] and not r["done"]:
+            print(f"{'':<33} ({r['note']})")
+    todo = [r for r in rows if not r["done"]]
+    gpu = [r["stage"] for r in todo if "gpu" in r["requires"]]
+    print(f"\n{len(todo)} stage(s) left." + (f" GPU-only (run on the RTX 4070 laptop): {', '.join(gpu)}" if gpu else ""))
 
 
-def cmd_analyze(args):
-    """Run error analysis."""
-    from src.services.analysis import classify_errors
-    from src.data.store import read_predictions, save_errors
+def cmd_baselines(args: argparse.Namespace) -> None:
+    from src.detectors.baselines import run_shortcut_audit
 
-    input_path = args.input or "results/hhem_predictions.csv"
-    df = read_predictions(input_path)
-    if df is None:
-        logger.error(f"No predictions found at {input_path}.")
-        return
-
-    errors = classify_errors(df, n_show=args.n_show or 10)
-    output = args.output or "results/error_analysis.csv"
-    save_errors(errors, output)
+    run_shortcut_audit()
 
 
-def cmd_report(args):
-    """Generate the final report."""
-    from src.display.report_generator import generate_report
-    output = args.output or "report/final_report.md"
-    generate_report(output)
-    print(f"Report generated at {output}")
+def cmd_rewrite(args: argparse.Namespace) -> None:
+    from src.data.normalize_answers import rewrite_halueval
+
+    rewrite_halueval(provider=args.provider, limit=args.limit)
 
 
-def cmd_compare(args):
-    """Compare all available models."""
-    from src.data.store import read_predictions, read_metrics, list_available_results
+def cmd_probe(args: argparse.Namespace) -> None:
+    from src.detectors.api_judge import probe_providers
 
-    available = list_available_results()
-    print("\n=== Available Results ===")
-    for name, path in sorted(available.items()):
-        print(f"  {name}: {path}")
-
-    # Simple metrics files (single model per file)
-    simple_files = [
-        ("HHEM Baseline", "results/metrics.json"),
-        ("Fine-tuned DeBERTa", "results/finetuned_metrics.json"),
-    ]
-    # Nested metrics files (multiple models per file)
-    nested_files = [
-        ("results/ensemble_metrics.json", "Ensemble"),
-        ("results/phantom_metrics.json", "PHANTOM"),
-    ]
-
-    print("\n=== Model Comparison ===")
-    print(f"{'Model':<30} {'Accuracy':>8} {'F1':>8} {'Precision':>9} {'Recall':>8}")
-    print("-" * 65)
-
-    def _print_model(name, m):
-        # Sanitize name for Windows console encoding
-        safe_name = name.encode("ascii", errors="replace").decode("ascii")
-        acc = m.get("accuracy", 0)
-        f1 = m.get("f1_hallucinated", m.get("f1", 0))
-        prec = m.get("precision_hallucinated", m.get("precision", 0))
-        rec = m.get("recall_hallucinated", m.get("recall", 0))
-        print(f"{safe_name:<30} {acc:>8.4f} {f1:>8.4f} {prec:>9.4f} {rec:>8.4f}")
-
-    for name, path in simple_files:
-        m = read_metrics(path)
-        if m:
-            _print_model(name, m)
-
-    for path, prefix in nested_files:
-        data = read_metrics(path)
-        if data:
-            for sub_name, m in data.items():
-                if isinstance(m, dict) and "accuracy" in m:
-                    _print_model(f"{prefix}: {sub_name}", m)
+    probe_providers(args.providers)
 
 
-def cmd_dashboard(args):
-    """Launch the Streamlit dashboard."""
-    app_path = os.path.join(os.path.dirname(__file__), "..", "..", "app.py")
-    app_path = os.path.abspath(app_path)
-    if not os.path.exists(app_path):
-        logger.error(f"Dashboard app not found at {app_path}")
-        return
-    print(f"Launching dashboard: streamlit run {app_path}")
-    subprocess.run([sys.executable, "-m", "streamlit", "run", app_path])
+def cmd_score(args: argparse.Namespace) -> None:
+    from src.verify.runner import run_config
+
+    run_config(args.config, device=args.device, limit=args.limit, only=args.only)
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        prog="fasthallucheck",
-        description="FastHalluCheck — Hallucination Detection Evaluation Pipeline",
-    )
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+def cmd_finetune(args: argparse.Namespace) -> None:
+    from src.train.finetune import finetune_from_config
 
-    # run
-    sub = subparsers.add_parser("run", help="Run full pipeline")
-    sub.set_defaults(func=cmd_run)
+    finetune_from_config(args.config, device=args.device, seeds=args.seeds, max_steps=args.max_steps)
 
-    # evaluate
-    sub = subparsers.add_parser("evaluate", help="Compute metrics from predictions")
-    sub.add_argument("--input", help="Predictions CSV path")
-    sub.add_argument("--output", help="Metrics JSON output path")
-    sub.add_argument("--threshold", type=float, help="Classification threshold")
-    sub.set_defaults(func=cmd_evaluate)
 
-    # analyze
-    sub = subparsers.add_parser("analyze", help="Run error analysis")
-    sub.add_argument("--input", help="Predictions CSV path")
-    sub.add_argument("--output", help="Error analysis CSV output path")
-    sub.add_argument("--n_show", type=int, help="Number of examples to show")
-    sub.set_defaults(func=cmd_analyze)
+def cmd_evaluate(args: argparse.Namespace) -> None:
+    from src.eval.evaluate import evaluate_all
 
-    # report
-    sub = subparsers.add_parser("report", help="Generate final report")
-    sub.add_argument("--output", help="Report output path")
-    sub.set_defaults(func=cmd_report)
+    evaluate_all()
 
-    # compare
-    sub = subparsers.add_parser("compare", help="Compare all models")
-    sub.set_defaults(func=cmd_compare)
 
-    # dashboard
-    sub = subparsers.add_parser("dashboard", help="Launch Streamlit dashboard")
-    sub.set_defaults(func=cmd_dashboard)
+def cmd_report(args: argparse.Namespace) -> None:
+    from src.display.report import generate_report
 
-    args = parser.parse_args()
-    if args.command is None:
-        parser.print_help()
-        return
+    generate_report()
 
-    args.func(args)
+
+def cmd_smoke(args: argparse.Namespace) -> None:
+    from src.smoke import run_smoke
+
+    run_smoke(device=args.device)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="python -m src.cli", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = p.add_subparsers(dest="command", required=True)
+
+    s = sub.add_parser("prepare", help="download + normalize datasets, splits, data card")
+    s.add_argument("--rebuild-splits", action="store_true", help="regenerate artifacts/splits.json (changes committed splits!)")
+    s.add_argument("--no-tokens", action="store_true", help="skip tokenizer measurements")
+    s.set_defaults(func=cmd_prepare)
+
+    sub.add_parser("status", help="show stage status").set_defaults(func=cmd_status)
+    sub.add_parser("baselines", help="shortcut baselines").set_defaults(func=cmd_baselines)
+
+    s = sub.add_parser("rewrite-halueval", help="label-blind HaluEval answer rewrite")
+    s.add_argument("--provider", default="dartmouth")
+    s.add_argument("--limit", type=int, default=None, help="only rewrite the first N pairs (testing)")
+    s.set_defaults(func=cmd_rewrite)
+
+    s = sub.add_parser("probe-api", help="probe configured API providers")
+    s.add_argument("--providers", nargs="*", default=None)
+    s.set_defaults(func=cmd_probe)
+
+    s = sub.add_parser("score", help="run detectors from a config")
+    s.add_argument("--config", required=True)
+    s.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
+    s.add_argument("--limit", type=int, default=None, help="cap examples per run (testing)")
+    s.add_argument("--only", nargs="*", default=None, help="only these run names from the config")
+    s.set_defaults(func=cmd_score)
+
+    s = sub.add_parser("finetune", help="fine-tune an encoder")
+    s.add_argument("--config", required=True)
+    s.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
+    s.add_argument("--seeds", nargs="*", type=int, default=None)
+    s.add_argument("--max-steps", type=int, default=None, help="cap training steps (smoke tests)")
+    s.set_defaults(func=cmd_finetune)
+
+    sub.add_parser("evaluate", help="compute metrics").set_defaults(func=cmd_evaluate)
+    sub.add_parser("report", help="regenerate report").set_defaults(func=cmd_report)
+
+    s = sub.add_parser("smoke", help="tiny end-to-end run")
+    s.add_argument("--device", default="cpu", choices=["auto", "cpu", "cuda"])
+    s.set_defaults(func=cmd_smoke)
+    return p
+
+
+def main(argv: list[str] | None = None) -> int:
+    setup_logging()
+    args = build_parser().parse_args(argv)
+    try:
+        args.func(args)
+    except Exception:
+        traceback.print_exc()
+        logger.error("Command %r failed", args.command)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

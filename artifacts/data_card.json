@@ -1,0 +1,853 @@
+{
+  "created": "2026-10-10",
+  "slices": {
+    "halueval": {
+      "rows": 20000,
+      "pairs": 10000,
+      "hallucinated": 10000,
+      "ctx_chars_mean": 344.2683,
+      "ctx_chars_p95": 594.0,
+      "resp_words_faithful": 2.2247,
+      "resp_period_faithful": 0.0124,
+      "resp_words_halluc": 10.9865,
+      "resp_period_halluc": 0.9513
+    },
+    "ragtruth_train": {
+      "rows": 14942,
+      "pairs": 2514,
+      "hallucinated": 6698,
+      "ctx_chars_mean": 2356.825659215634,
+      "ctx_chars_p95": 5334.0,
+      "resp_words_faithful": 120.78881610868511,
+      "resp_period_faithful": 0.9793789422610383,
+      "resp_words_halluc": 145.9747685876381,
+      "resp_period_halluc": 0.9823828008360704
+    },
+    "ragtruth_test": {
+      "rows": 2675,
+      "pairs": 450,
+      "hallucinated": 943,
+      "ctx_chars_mean": 2374.271401869159,
+      "ctx_chars_p95": 5368.0,
+      "resp_words_faithful": 117.75577367205543,
+      "resp_period_faithful": 0.98094688221709,
+      "resp_words_halluc": 145.30222693531283,
+      "resp_period_halluc": 0.9915164369034994
+    },
+    "phantom_10k_500_seed": {
+      "rows": 994,
+      "pairs": 497,
+      "hallucinated": 497,
+      "ctx_chars_mean": 3063.4748490945676,
+      "ctx_chars_p95": 3566.499999999999,
+      "resp_words_faithful": 32.901408450704224,
+      "resp_period_faithful": 0.6197183098591549,
+      "resp_words_halluc": 73.42655935613682,
+      "resp_period_halluc": 1.0
+    },
+    "phantom_def14a_500_seed": {
+      "rows": 988,
+      "pairs": 494,
+      "hallucinated": 494,
+      "ctx_chars_mean": 2988.089068825911,
+      "ctx_chars_p95": 3469.25,
+      "resp_words_faithful": 35.51012145748988,
+      "resp_period_faithful": 0.5809716599190283,
+      "resp_words_halluc": 78.16194331983806,
+      "resp_period_halluc": 1.0
+    },
+    "phantom_8k_500_seed": {
+      "rows": 986,
+      "pairs": 493,
+      "hallucinated": 493,
+      "ctx_chars_mean": 2952.7565922920894,
+      "ctx_chars_p95": 3485.75,
+      "resp_words_faithful": 25.20689655172414,
+      "resp_period_faithful": 0.4969574036511156,
+      "resp_words_halluc": 68.45436105476674,
+      "resp_period_halluc": 1.0
+    },
+    "phantom_497k_500_seed": {
+      "rows": 994,
+      "pairs": 497,
+      "hallucinated": 497,
+      "ctx_chars_mean": 2895.2997987927565,
+      "ctx_chars_p95": 3249.35,
+      "resp_words_faithful": 43.881287726358146,
+      "resp_period_faithful": 0.710261569416499,
+      "resp_words_halluc": 84.87525150905432,
+      "resp_period_halluc": 1.0
+    },
+    "phantom_10k_2000_beginning": {
+      "rows": 984,
+      "pairs": 492,
+      "hallucinated": 492,
+      "ctx_chars_mean": 11805.896341463415,
+      "ctx_chars_p95": 13016.749999999989,
+      "resp_words_faithful": 32.951219512195124,
+      "resp_period_faithful": 0.6199186991869918,
+      "resp_words_halluc": 73.4329268292683,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 492,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_2000_middle": {
+      "rows": 980,
+      "pairs": 490,
+      "hallucinated": 490,
+      "ctx_chars_mean": 11798.824489795918,
+      "ctx_chars_p95": 12959.0,
+      "resp_words_faithful": 33.07959183673469,
+      "resp_period_faithful": 0.6224489795918368,
+      "resp_words_halluc": 73.4795918367347,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 490,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_2000_end": {
+      "rows": 982,
+      "pairs": 491,
+      "hallucinated": 491,
+      "ctx_chars_mean": 11822.15682281059,
+      "ctx_chars_p95": 13079.95,
+      "resp_words_faithful": 33.22199592668024,
+      "resp_period_faithful": 0.6232179226069247,
+      "resp_words_halluc": 73.60692464358452,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 491,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_5000_beginning": {
+      "rows": 896,
+      "pairs": 448,
+      "hallucinated": 448,
+      "ctx_chars_mean": 29306.984375,
+      "ctx_chars_p95": 31225.0,
+      "resp_words_faithful": 35.111607142857146,
+      "resp_period_faithful": 0.6428571428571429,
+      "resp_words_halluc": 74.80803571428571,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 448,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_5000_middle": {
+      "rows": 904,
+      "pairs": 452,
+      "hallucinated": 452,
+      "ctx_chars_mean": 29315.54203539823,
+      "ctx_chars_p95": 31286.399999999994,
+      "resp_words_faithful": 34.76106194690266,
+      "resp_period_faithful": 0.6371681415929203,
+      "resp_words_halluc": 74.69469026548673,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 452,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_5000_end": {
+      "rows": 896,
+      "pairs": 448,
+      "hallucinated": 448,
+      "ctx_chars_mean": 29350.149553571428,
+      "ctx_chars_p95": 31298.0,
+      "resp_words_faithful": 34.995535714285715,
+      "resp_period_faithful": 0.6450892857142857,
+      "resp_words_halluc": 74.79241071428571,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 448,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_10000_beginning": {
+      "rows": 892,
+      "pairs": 446,
+      "hallucinated": 446,
+      "ctx_chars_mean": 59799.86995515695,
+      "ctx_chars_p95": 72062.0,
+      "resp_words_faithful": 34.955156950672645,
+      "resp_period_faithful": 0.6345291479820628,
+      "resp_words_halluc": 74.69506726457399,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 446,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_10000_middle": {
+      "rows": 896,
+      "pairs": 448,
+      "hallucinated": 448,
+      "ctx_chars_mean": 60479.27232142857,
+      "ctx_chars_p95": 76113.0,
+      "resp_words_faithful": 34.877232142857146,
+      "resp_period_faithful": 0.6361607142857143,
+      "resp_words_halluc": 74.77678571428571,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 448,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_10000_end": {
+      "rows": 892,
+      "pairs": 446,
+      "hallucinated": 446,
+      "ctx_chars_mean": 60296.32959641256,
+      "ctx_chars_p95": 73692.0,
+      "resp_words_faithful": 34.67488789237668,
+      "resp_period_faithful": 0.6345291479820628,
+      "resp_words_halluc": 74.68609865470852,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 446,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_20000_beginning": {
+      "rows": 886,
+      "pairs": 443,
+      "hallucinated": 443,
+      "ctx_chars_mean": 121157.1828442438,
+      "ctx_chars_p95": 155390.0,
+      "resp_words_faithful": 35.05191873589165,
+      "resp_period_faithful": 0.6388261851015802,
+      "resp_words_halluc": 74.77878103837472,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 443,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_20000_middle": {
+      "rows": 882,
+      "pairs": 441,
+      "hallucinated": 441,
+      "ctx_chars_mean": 121253.7052154195,
+      "ctx_chars_p95": 151100.0,
+      "resp_words_faithful": 35.22222222222222,
+      "resp_period_faithful": 0.63718820861678,
+      "resp_words_halluc": 74.99773242630386,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 441,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_20000_end": {
+      "rows": 882,
+      "pairs": 441,
+      "hallucinated": 441,
+      "ctx_chars_mean": 121990.1156462585,
+      "ctx_chars_p95": 154889.0,
+      "resp_words_faithful": 35.16780045351474,
+      "resp_period_faithful": 0.6349206349206349,
+      "resp_words_halluc": 74.98412698412699,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 441,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_30000_beginning": {
+      "rows": 850,
+      "pairs": 425,
+      "hallucinated": 425,
+      "ctx_chars_mean": 181718.64705882352,
+      "ctx_chars_p95": 218707.0,
+      "resp_words_faithful": 35.30352941176471,
+      "resp_period_faithful": 0.6447058823529411,
+      "resp_words_halluc": 74.93411764705883,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 425,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_30000_middle": {
+      "rows": 846,
+      "pairs": 423,
+      "hallucinated": 423,
+      "ctx_chars_mean": 182631.7706855792,
+      "ctx_chars_p95": 221540.0,
+      "resp_words_faithful": 35.5177304964539,
+      "resp_period_faithful": 0.6430260047281324,
+      "resp_words_halluc": 75.1323877068558,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 423,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_10k_30000_end": {
+      "rows": 846,
+      "pairs": 423,
+      "hallucinated": 423,
+      "ctx_chars_mean": 183577.4917257683,
+      "ctx_chars_p95": 221675.0,
+      "resp_words_faithful": 35.340425531914896,
+      "resp_period_faithful": 0.640661938534279,
+      "resp_words_halluc": 74.95981087470449,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 423,
+        "reanswered": 0,
+        "long_only": 0
+      }
+    },
+    "phantom_def14a_2000_beginning": {
+      "rows": 1000,
+      "pairs": 500,
+      "hallucinated": 500,
+      "ctx_chars_mean": 11482.114,
+      "ctx_chars_p95": 12677.65,
+      "resp_words_faithful": 35.214,
+      "resp_period_faithful": 0.586,
+      "resp_words_halluc": 78.2,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 341,
+        "reanswered": 151,
+        "long_only": 8
+      }
+    },
+    "phantom_def14a_2000_middle": {
+      "rows": 1000,
+      "pairs": 500,
+      "hallucinated": 500,
+      "ctx_chars_mean": 11440.626,
+      "ctx_chars_p95": 12774.1,
+      "resp_words_faithful": 35.214,
+      "resp_period_faithful": 0.586,
+      "resp_words_halluc": 78.2,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 341,
+        "reanswered": 153,
+        "long_only": 6
+      }
+    },
+    "phantom_def14a_2000_end": {
+      "rows": 1000,
+      "pairs": 500,
+      "hallucinated": 500,
+      "ctx_chars_mean": 11464.308,
+      "ctx_chars_p95": 12666.099999999999,
+      "resp_words_faithful": 35.214,
+      "resp_period_faithful": 0.586,
+      "resp_words_halluc": 78.2,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 341,
+        "reanswered": 153,
+        "long_only": 6
+      }
+    },
+    "phantom_def14a_5000_beginning": {
+      "rows": 996,
+      "pairs": 498,
+      "hallucinated": 498,
+      "ctx_chars_mean": 28357.24297188755,
+      "ctx_chars_p95": 30941.25,
+      "resp_words_faithful": 35.33734939759036,
+      "resp_period_faithful": 0.5863453815261044,
+      "resp_words_halluc": 78.214859437751,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 340,
+        "reanswered": 151,
+        "long_only": 7
+      }
+    },
+    "phantom_def14a_5000_middle": {
+      "rows": 996,
+      "pairs": 498,
+      "hallucinated": 498,
+      "ctx_chars_mean": 28338.62048192771,
+      "ctx_chars_p95": 30975.0,
+      "resp_words_faithful": 35.33734939759036,
+      "resp_period_faithful": 0.5863453815261044,
+      "resp_words_halluc": 78.214859437751,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 340,
+        "reanswered": 153,
+        "long_only": 5
+      }
+    },
+    "phantom_def14a_5000_end": {
+      "rows": 996,
+      "pairs": 498,
+      "hallucinated": 498,
+      "ctx_chars_mean": 28372.86546184739,
+      "ctx_chars_p95": 31019.75,
+      "resp_words_faithful": 35.33734939759036,
+      "resp_period_faithful": 0.5863453815261044,
+      "resp_words_halluc": 78.214859437751,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 340,
+        "reanswered": 153,
+        "long_only": 5
+      }
+    },
+    "phantom_def14a_10000_beginning": {
+      "rows": 980,
+      "pairs": 490,
+      "hallucinated": 490,
+      "ctx_chars_mean": 56542.857142857145,
+      "ctx_chars_p95": 61187.0,
+      "resp_words_faithful": 35.638775510204084,
+      "resp_period_faithful": 0.5877551020408164,
+      "resp_words_halluc": 78.57551020408164,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 333,
+        "reanswered": 150,
+        "long_only": 7
+      }
+    },
+    "phantom_def14a_10000_middle": {
+      "rows": 980,
+      "pairs": 490,
+      "hallucinated": 490,
+      "ctx_chars_mean": 56584.95102040816,
+      "ctx_chars_p95": 60968.0,
+      "resp_words_faithful": 35.638775510204084,
+      "resp_period_faithful": 0.5877551020408164,
+      "resp_words_halluc": 78.57551020408164,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 333,
+        "reanswered": 152,
+        "long_only": 5
+      }
+    },
+    "phantom_def14a_10000_end": {
+      "rows": 980,
+      "pairs": 490,
+      "hallucinated": 490,
+      "ctx_chars_mean": 56461.58775510204,
+      "ctx_chars_p95": 61091.0,
+      "resp_words_faithful": 35.638775510204084,
+      "resp_period_faithful": 0.5877551020408164,
+      "resp_words_halluc": 78.57551020408164,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 333,
+        "reanswered": 152,
+        "long_only": 5
+      }
+    },
+    "phantom_def14a_20000_beginning": {
+      "rows": 840,
+      "pairs": 420,
+      "hallucinated": 420,
+      "ctx_chars_mean": 112618.59523809524,
+      "ctx_chars_p95": 120785.9,
+      "resp_words_faithful": 35.82142857142857,
+      "resp_period_faithful": 0.5928571428571429,
+      "resp_words_halluc": 79.44761904761904,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 280,
+        "reanswered": 135,
+        "long_only": 5
+      }
+    },
+    "phantom_def14a_20000_middle": {
+      "rows": 840,
+      "pairs": 420,
+      "hallucinated": 420,
+      "ctx_chars_mean": 113034.4261904762,
+      "ctx_chars_p95": 121457.9,
+      "resp_words_faithful": 35.82142857142857,
+      "resp_period_faithful": 0.5928571428571429,
+      "resp_words_halluc": 79.44761904761904,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 280,
+        "reanswered": 136,
+        "long_only": 4
+      }
+    },
+    "phantom_def14a_20000_end": {
+      "rows": 840,
+      "pairs": 420,
+      "hallucinated": 420,
+      "ctx_chars_mean": 112724.3380952381,
+      "ctx_chars_p95": 121939.54999999999,
+      "resp_words_faithful": 35.82142857142857,
+      "resp_period_faithful": 0.5928571428571429,
+      "resp_words_halluc": 79.44761904761904,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 280,
+        "reanswered": 136,
+        "long_only": 4
+      }
+    },
+    "phantom_def14a_30000_beginning": {
+      "rows": 654,
+      "pairs": 327,
+      "hallucinated": 327,
+      "ctx_chars_mean": 168748.749235474,
+      "ctx_chars_p95": 182582.0,
+      "resp_words_faithful": 35.14373088685015,
+      "resp_period_faithful": 0.5963302752293578,
+      "resp_words_halluc": 78.71865443425077,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 220,
+        "reanswered": 103,
+        "long_only": 4
+      }
+    },
+    "phantom_def14a_30000_middle": {
+      "rows": 654,
+      "pairs": 327,
+      "hallucinated": 327,
+      "ctx_chars_mean": 169377.626911315,
+      "ctx_chars_p95": 182207.0,
+      "resp_words_faithful": 35.14373088685015,
+      "resp_period_faithful": 0.5963302752293578,
+      "resp_words_halluc": 78.71865443425077,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 220,
+        "reanswered": 104,
+        "long_only": 3
+      }
+    },
+    "phantom_def14a_30000_end": {
+      "rows": 654,
+      "pairs": 327,
+      "hallucinated": 327,
+      "ctx_chars_mean": 168840.08256880735,
+      "ctx_chars_p95": 182357.0,
+      "resp_words_faithful": 35.14373088685015,
+      "resp_period_faithful": 0.5963302752293578,
+      "resp_words_halluc": 78.71865443425077,
+      "resp_period_halluc": 1.0,
+      "join": {
+        "original": 220,
+        "reanswered": 104,
+        "long_only": 3
+      }
+    }
+  },
+  "split_counts": {
+    "halueval": {
+      "train": 7000,
+      "val": 1500,
+      "test": 1500
+    },
+    "ragtruth": {
+      "train": 2137,
+      "test": 450,
+      "val": 377
+    },
+    "phantom": {
+      "test": 999,
+      "train": 842,
+      "val": 148
+    }
+  },
+  "tokens": {
+    "phantom_10k_seed": {
+      "modernbert": {
+        "p50": 591.0,
+        "p95": 848.5999999999995,
+        "max": 1652.0
+      },
+      "deberta_v3": {
+        "p50": 564.0,
+        "p95": 798.1999999999998,
+        "max": 1509.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 627.5,
+        "p95": 925.5999999999995,
+        "max": 1694.0
+      }
+    },
+    "phantom_def14a_seed": {
+      "modernbert": {
+        "p50": 605.0,
+        "p95": 784.2999999999997,
+        "max": 1399.0
+      },
+      "deberta_v3": {
+        "p50": 572.0,
+        "p95": 742.3499999999997,
+        "max": 1410.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 641.0,
+        "p95": 833.0999999999999,
+        "max": 1439.0
+      }
+    },
+    "phantom_8k_seed": {
+      "modernbert": {
+        "p50": 640.0,
+        "p95": 900.5499999999986,
+        "max": 1582.0
+      },
+      "deberta_v3": {
+        "p50": 606.0,
+        "p95": 842.2999999999997,
+        "max": 1341.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 684.0,
+        "p95": 964.8499999999992,
+        "max": 1565.0
+      }
+    },
+    "phantom_497k_seed": {
+      "modernbert": {
+        "p50": 580.0,
+        "p95": 697.05,
+        "max": 893.0
+      },
+      "deberta_v3": {
+        "p50": 553.0,
+        "p95": 657.2999999999997,
+        "max": 905.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 610.0,
+        "p95": 723.05,
+        "max": 912.0
+      }
+    },
+    "phantom_10k_2000_middle": {
+      "modernbert": {
+        "p50": 2276.0,
+        "p95": 3472.9000000000005,
+        "max": 4497.0
+      },
+      "deberta_v3": {
+        "p50": 2188.5,
+        "p95": 3065.25,
+        "max": 3070.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 2456.5,
+        "p95": 3082.75,
+        "max": 3154.0
+      }
+    },
+    "phantom_10k_5000_middle": {
+      "modernbert": {
+        "p50": 5740.0,
+        "p95": 6857.6,
+        "max": 7686.0
+      },
+      "deberta_v3": {
+        "p50": 5507.0,
+        "p95": 6524.5,
+        "max": 6857.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 6001.5,
+        "p95": 6997.3,
+        "max": 7383.0
+      }
+    },
+    "phantom_10k_10000_middle": {
+      "modernbert": {
+        "p50": 11286.0,
+        "p95": 16999.450000000004,
+        "max": 24703.0
+      },
+      "deberta_v3": {
+        "p50": 10781.0,
+        "p95": 15561.300000000005,
+        "max": 21096.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 11884.0,
+        "p95": 19677.900000000005,
+        "max": 26459.0
+      }
+    },
+    "phantom_10k_20000_middle": {
+      "modernbert": {
+        "p50": 24509.5,
+        "p95": 38044.20000000001,
+        "max": 49771.0
+      },
+      "deberta_v3": {
+        "p50": 23120.0,
+        "p95": 34982.850000000006,
+        "max": 46646.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 25963.5,
+        "p95": 40786.20000000001,
+        "max": 56123.0
+      }
+    },
+    "phantom_10k_30000_middle": {
+      "modernbert": {
+        "p50": 35482.0,
+        "p95": 45097.05,
+        "max": 47796.0
+      },
+      "deberta_v3": {
+        "p50": 33967.5,
+        "p95": 43082.3,
+        "max": 43810.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 37626.0,
+        "p95": 48716.200000000004,
+        "max": 49765.0
+      }
+    },
+    "phantom_def14a_2000_middle": {
+      "modernbert": {
+        "p50": 2367.5,
+        "p95": 2989.4000000000005,
+        "max": 3928.0
+      },
+      "deberta_v3": {
+        "p50": 2221.0,
+        "p95": 2686.300000000001,
+        "max": 3851.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 2514.5,
+        "p95": 3222.2500000000014,
+        "max": 5279.0
+      }
+    },
+    "phantom_def14a_5000_middle": {
+      "modernbert": {
+        "p50": 6269.0,
+        "p95": 8006.650000000001,
+        "max": 8133.0
+      },
+      "deberta_v3": {
+        "p50": 5859.0,
+        "p95": 7407.4,
+        "max": 7453.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 6415.0,
+        "p95": 8218.85,
+        "max": 9299.0
+      }
+    },
+    "phantom_def14a_10000_middle": {
+      "modernbert": {
+        "p50": 12077.5,
+        "p95": 15061.2,
+        "max": 15179.0
+      },
+      "deberta_v3": {
+        "p50": 11359.5,
+        "p95": 13216.75,
+        "max": 14086.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 12428.0,
+        "p95": 15071.300000000001,
+        "max": 15875.0
+      }
+    },
+    "phantom_def14a_20000_middle": {
+      "modernbert": {
+        "p50": 24188.5,
+        "p95": 27691.5,
+        "max": 27948.0
+      },
+      "deberta_v3": {
+        "p50": 23093.5,
+        "p95": 25919.65,
+        "max": 26369.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 25851.5,
+        "p95": 29863.9,
+        "max": 30242.0
+      }
+    },
+    "phantom_def14a_30000_middle": {
+      "modernbert": {
+        "p50": 36981.0,
+        "p95": 39356.6,
+        "max": 40546.0
+      },
+      "deberta_v3": {
+        "p50": 34883.0,
+        "p95": 39160.4,
+        "max": 42360.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 39244.5,
+        "p95": 42024.15,
+        "max": 42103.0
+      }
+    },
+    "halueval": {
+      "modernbert": {
+        "p50": 75.0,
+        "p95": 146.0999999999999,
+        "max": 231.0
+      },
+      "deberta_v3": {
+        "p50": 71.0,
+        "p95": 136.04999999999995,
+        "max": 229.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 84.0,
+        "p95": 153.19999999999982,
+        "max": 260.0
+      }
+    },
+    "ragtruth_test": {
+      "modernbert": {
+        "p50": 518.0,
+        "p95": 1211.7499999999993,
+        "max": 2076.0
+      },
+      "deberta_v3": {
+        "p50": 509.5,
+        "p95": 1203.049999999999,
+        "max": 1949.0
+      },
+      "flan_t5 (HHEM)": {
+        "p50": 590.0,
+        "p95": 1393.4999999999995,
+        "max": 2297.0
+      }
+    }
+  }
+}
