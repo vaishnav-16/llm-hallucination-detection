@@ -44,3 +44,23 @@ def test_cuda_device_caps_the_allocator(monkeypatch):
     monkeypatch.setattr(torch.cuda, "get_device_properties", lambda i: type("P", (), {"total_memory": 8 * 2**30})())
     assert config.get_device("cuda") == "cuda"
     assert calls == [config.GPU_MEMORY_FRACTION]
+
+
+def test_t5_bias_sdpa_matches_eager_attention():
+    """The HHEM attention path equals T5's eager attention, including padding, across cached and fresh batches."""
+    import torch
+    from transformers.models.t5.modeling_t5 import eager_attention_forward
+
+    from src.detectors.hf_models import t5_bias_sdpa
+
+    torch.manual_seed(0)
+    for _ in range(2):  # second batch: new tensors must not reuse the first batch's cached mask
+        q, k, v = (torch.randn(2, 4, 16, 8) for _ in range(3))
+        bias = torch.randn(1, 4, 16, 16)
+        keep = torch.ones(2, 1, 16, 16, dtype=torch.bool)
+        keep[1, :, :, 11:] = False  # second row padded after 11 tokens
+        additive = torch.zeros(2, 1, 16, 16).masked_fill(~keep, torch.finfo(torch.float32).min)
+        want, _ = eager_attention_forward(torch.nn.Module().eval(), q, k, v, additive, scaling=1.0, position_bias=bias)
+        for _layer in range(2):  # second call per batch hits the cache
+            got, _ = t5_bias_sdpa(None, q, k, v, keep, scaling=1.0, position_bias=bias)
+            assert torch.allclose(got, want, atol=1e-5)

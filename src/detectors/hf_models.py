@@ -48,6 +48,44 @@ class _HFDetector(Detector):
         raise NotImplementedError
 
 
+T5_ATTENTION = "t5_bias_sdpa"
+_t5_bias_cache: dict = {}
+
+
+def t5_bias_sdpa(module, query, key, value, attention_mask, scaling=None, dropout=0.0, position_bias=None, **kwargs):
+    """T5 attention with the relative position bias and padding mask folded into one additive mask for SDPA.
+
+    Stock T5 + ``sdpa`` rebuilds a (batch, heads, L, L) mask in every layer and falls back to SDPA's fp32 math
+    kernel (4.4 pairs/s for HHEM at 2K tokens on the 4070); ``eager`` is 6.7. T5 passes the same position-bias
+    tensor to all 12 layers, so the combined mask is built once per forward in the model dtype and SDPA's
+    fused kernel runs: 24 pairs/s, scores within 0.003 of ``eager`` (bf16 noise; batch composition alone moves
+    them 0.01).
+    """
+    torch = _torch()
+    refs = _t5_bias_cache.get("refs")
+    if refs is not None and refs[0] is position_bias and refs[1] is attention_mask:
+        bias = _t5_bias_cache["bias"]
+    else:
+        bias = position_bias.to(query.dtype)
+        if attention_mask is not None:
+            if attention_mask.dtype == torch.bool:
+                bias = bias.masked_fill(~attention_mask, torch.finfo(query.dtype).min)
+            else:
+                bias = bias + attention_mask.to(query.dtype)
+        # Holding the inputs keeps their ids from being reused by the next batch's tensors.
+        _t5_bias_cache.update(refs=(position_bias, attention_mask), bias=bias)
+    out = torch.nn.functional.scaled_dot_product_attention(query, key, value, attn_mask=bias, dropout_p=dropout, scale=scaling)
+    return out.transpose(1, 2).contiguous(), None
+
+
+def _register_t5_attention() -> None:
+    from transformers import AttentionInterface
+    from transformers.masking_utils import AttentionMaskInterface, sdpa_mask
+
+    AttentionInterface.register(T5_ATTENTION, t5_bias_sdpa)
+    AttentionMaskInterface.register(T5_ATTENTION, sdpa_mask)
+
+
 class HHEMDetector(_HFDetector):
     """Vectara HHEM-2.1-open (flan-t5-base). Its consistency score s becomes p_halluc = 1 - s."""
 
@@ -62,6 +100,8 @@ class HHEMDetector(_HFDetector):
             spec["repo_id"], revision=spec["revision"], trust_remote_code=True, dtype=_dtype(device, precision)
         )
         self.model.t5.to(device).eval()
+        _register_t5_attention()
+        self.model.t5.config._attn_implementation = T5_ATTENTION
         self.tokenizer = self.model.tokenzier  # (sic) attribute name in HHEM's remote code
         self.prompt = self.model.prompt
         self.n_truncated = 0
@@ -77,7 +117,8 @@ class HHEMDetector(_HFDetector):
     def _score_batch(self, pairs):
         torch = _torch()
         texts = [self._format(p, h) for p, h in pairs]
-        enc = self.tokenizer(texts, return_tensors="pt", padding=True).to(self.device)
+        # Multiple-of-8 lengths keep SDPA's fused kernel aligned (4.9 -> 7.9 pairs/s before the bias cache).
+        enc = self.tokenizer(texts, return_tensors="pt", padding=True, pad_to_multiple_of=8).to(self.device)
         with torch.no_grad():
             logits = self.model.t5(**enc).logits[:, 0, :]
         consistency = torch.softmax(logits.float(), dim=-1)[:, 1]
@@ -85,7 +126,7 @@ class HHEMDetector(_HFDetector):
 
 
     def describe(self) -> dict:
-        return {**super().describe(), "premises_truncated": self.n_truncated}
+        return {**super().describe(), "premises_truncated": self.n_truncated, "attention": T5_ATTENTION}
 
 
 class SequenceClassifierDetector(_HFDetector):
