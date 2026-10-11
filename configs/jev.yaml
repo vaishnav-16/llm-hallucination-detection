@@ -67,6 +67,15 @@ runs:
     strategies: *jev_full_strategies
     slices: [phantom_grid_sub]
 
+  # Empty-document control on the same 200-pair grid rows as jev_noul_full, so "how much of Jev's AUROC survives
+  # without the document" is measured on exactly the rows of the headline result. With no document every cell
+  # asks the seed's questions again (10-K long cells reuse the seed answers), so most requests repeat.
+  - name: jev_noul_ablate_full
+    detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: [{strategy: truncate, window: 16000}]
+    ablate_context: true
+    slices: [phantom_grid_sub]
+
   # v2 question set (src/detectors/jev.py): atomic per-claim questions (support, numbers, entities, extra) plus the
   # Choice asked in both option orders, following TypeSafe's jev-1.13 guidance. All five runs send identical
   # requests, so only the first one is paid ($0.11 for the validation slices).

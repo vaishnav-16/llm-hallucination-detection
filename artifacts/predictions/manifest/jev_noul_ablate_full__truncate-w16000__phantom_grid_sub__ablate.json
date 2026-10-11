@@ -1,0 +1,30 @@
+{
+  "hash": "d9a97337112f",
+  "run": "jev_noul_ablate_full",
+  "slice": "phantom_grid_sub",
+  "strategy": "truncate-w16000",
+  "ablate": true,
+  "detector": {
+    "name": "jev_noul",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [
+      "jev-1.13.0"
+    ],
+    "answer": "noul",
+    "questions": "v1",
+    "session_input_tokens": 595663,
+    "session_usd": 0.025,
+    "premises_shrunk": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 16000
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 29.2,
+  "git_commit": "b5c6039",
+  "created": "2026-10-11T14:22:12"
+}

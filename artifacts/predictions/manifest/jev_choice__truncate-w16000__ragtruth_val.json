@@ -9,12 +9,11 @@
     "requires": "api",
     "max_length": 28000,
     "model_requested": "jev-1.13.0",
-    "models_served": [
-      "jev-1.13.0"
-    ],
+    "models_served": [],
     "answer": "choice",
-    "session_input_tokens": 8171800,
-    "session_usd": 0.3432,
+    "questions": "v1",
+    "session_input_tokens": 0,
+    "session_usd": 0.0,
     "premises_shrunk": 2
   },
   "spec": {
@@ -23,7 +22,7 @@
   },
   "rows": 605,
   "limit": 100,
-  "elapsed_s": 1.1,
-  "git_commit": "7ad33b9",
-  "created": "2026-10-11T03:46:43"
+  "elapsed_s": 1.0,
+  "git_commit": "b5c6039",
+  "created": "2026-10-11T14:20:25"
 }
