@@ -191,7 +191,13 @@ class JevClient:
         if self.max_usd is not None and self.spend["usd"] >= self.max_usd:
             raise ScoringError(f"Jev budget guard: ${self.spend['usd']:.3f} spent >= max_usd {self.max_usd}")
         for attempt in range(7):
-            status, payload, headers = self._post("/systemone", body)
+            try:
+                status, payload, headers = self._post("/systemone", body)
+            except OSError as e:  # requests' ConnectionError / SSLError / Timeout: a dropped connection, not an answer
+                wait = min(60.0, 2.0 ** attempt)
+                logger.warning("Jev connection error (%s), retrying in %.1fs", type(e).__name__, wait)
+                time.sleep(wait)
+                continue
             if status == 200:
                 break
             if status in (429, 529, 500, 502, 503, 504):

@@ -212,3 +212,17 @@ def test_answer_must_match_question_set():
         jev.JevJudge("support")  # v1 has no 'support' answer
     with pytest.raises(ValueError):
         jev.JevJudge("noul", questions="v2")
+
+
+def test_dropped_connection_is_retried(monkeypatch):
+    monkeypatch.setattr(jev.time, "sleep", lambda s: None)
+    api, n = FakeAPI(), {"fails": 2}
+
+    def flaky(path, body):
+        if n["fails"]:
+            n["fails"] -= 1
+            raise ConnectionError("EOF occurred in violation of protocol")
+        return api(path, body)
+
+    p = _judge(api=flaky).score_pairs(["doc"], ["q\x1edoc"])
+    assert np.isfinite(p).all() and len(api.calls) == 1
