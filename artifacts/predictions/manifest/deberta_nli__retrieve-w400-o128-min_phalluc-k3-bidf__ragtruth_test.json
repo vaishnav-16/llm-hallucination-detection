@@ -1,24 +1,25 @@
 {
-  "hash": "ab826f0bbc6c",
+  "hash": "27d221b8e658",
   "run": "deberta_nli",
   "slice": "ragtruth_test",
-  "strategy": "retrieve-w400-o128-min_phalluc-k3",
+  "strategy": "retrieve-w400-o128-min_phalluc-k3-bidf",
   "ablate": false,
   "detector": {
     "name": "DeBERTa-v3-base-mnli-fever-anli",
     "requires": "gpu",
     "max_length": 512,
-    "claims_truncated": 1974
+    "claims_truncated": 0
   },
   "spec": {
     "strategy": "retrieve",
     "window": 400,
     "overlap": 128,
-    "top_k": 3
+    "top_k": 3,
+    "retriever": "bm25_blockidf"
   },
   "rows": 2675,
   "limit": null,
   "elapsed_s": 76.0,
-  "git_commit": "d6ff0c5",
-  "created": "2026-10-11T02:48:30"
+  "git_commit": "26c5bbc",
+  "created": "2026-10-11T19:32:16"
 }

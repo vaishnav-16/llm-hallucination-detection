@@ -2,7 +2,7 @@
 
 _Generated 2026-10-11 by `python -m src.cli report` from the committed `artifacts/`._
 
-**Pipeline status.** Done: prepare, baselines, probe-jev, judge-jev, evaluate. Pending: rewrite-halueval, probe-api, score-smoke, score-zeroshot, judges-api, finetune, score-finetuned, judge-local, report. Sections that depend on pending stages say so explicitly.
+**Pipeline status.** Done: prepare, baselines, score-smoke, probe-jev, judge-jev, finetune, evaluate. Pending: rewrite-halueval, probe-api, score-zeroshot, judges-api, score-finetuned, judge-local, report. Sections that depend on pending stages say so explicitly.
 
 ## Research question
 
@@ -36,7 +36,7 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | answer_length | none | 0.982 [0.977, 0.986] | 0.835 [0.820, 0.850] | 0.732 [0.713, 0.755] | nan | nan | nan | nan | 0.685 [0.663, 0.707] |
 | answer_tfidf | none | 0.968 [0.962, 0.974] | 0.957 [0.950, 0.965] | 0.888 [0.869, 0.908] | nan | nan | nan | nan | 0.808 [0.787, 0.828] |
 | deberta_nli | chunk-w400-o128-min_phalluc | 0.799 [0.784, 0.813] | nan | nan | 0.600 [0.584, 0.614] | 0.553 [0.535, 0.572] | nan | nan | 0.592 [0.568, 0.615] |
-| deberta_nli | retrieve-w400-o128-min_phalluc-k3 | 0.799 [0.784, 0.813] | nan | nan | 0.697 [0.677, 0.716] | 0.656 [0.628, 0.684] | nan | nan | 0.594 [0.570, 0.617] |
+| deberta_nli | retrieve-w400-o128-min_phalluc-k3-bidf | 0.799 [0.784, 0.813] | nan | nan | 0.698 [0.677, 0.717] | 0.654 [0.625, 0.682] | nan | nan | 0.596 [0.573, 0.619] |
 | deberta_nli | truncate-w400 | 0.799 [0.784, 0.813] | nan | nan | 0.535 [0.523, 0.547] | 0.525 [0.510, 0.543] | nan | nan | 0.597 [0.574, 0.621] |
 | jev_choice | chunk-w16000-o2048-min_phalluc | 0.920 [0.903, 0.935] | nan | nan | 0.969 [0.946, 0.986] | 0.966 [0.926, 0.992] | nan | nan | 0.925 [0.905, 0.945] |
 | jev_choice | retrieve-w1500-o750-min_phalluc-k2 | 0.920 [0.903, 0.935] | nan | nan | 0.930 [0.909, 0.948] | 0.937 [0.903, 0.963] | nan | nan | 0.928 [0.908, 0.946] |
@@ -74,9 +74,9 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | detector | slice | a | b | n | diff | ci_lo | ci_hi | p_value |
 |---|---|---|---|---|---|---|---|---|
 | deberta_nli | phantom_grid_sub | chunk-w400-o128-min_phalluc | deberta_nli:truncate-w400 | 12800 | 0.064 | 0.051 | 0.079 | 0.000 |
-| deberta_nli | phantom_grid_sub | retrieve-w400-o128-min_phalluc-k3 | deberta_nli:truncate-w400 | 12800 | 0.162 | 0.146 | 0.180 | 0.000 |
+| deberta_nli | phantom_grid_sub | retrieve-w400-o128-min_phalluc-k3-bidf | deberta_nli:truncate-w400 | 12800 | 0.163 | 0.146 | 0.180 | 0.000 |
 | deberta_nli | phantom_grid_sub | chunk-w400-o128-min_phalluc | answer_tfidf:answer_tfidf | 12800 | -0.356 | -0.374 | -0.339 | 0.000 |
-| deberta_nli | phantom_grid_sub | retrieve-w400-o128-min_phalluc-k3 | answer_tfidf:answer_tfidf | 12800 | -0.258 | -0.280 | -0.236 | 0.000 |
+| deberta_nli | phantom_grid_sub | retrieve-w400-o128-min_phalluc-k3-bidf | answer_tfidf:answer_tfidf | 12800 | -0.257 | -0.280 | -0.235 | 0.000 |
 | deberta_nli | phantom_grid_sub | truncate-w400 | answer_tfidf:answer_tfidf | 12800 | -0.420 | -0.435 | -0.404 | 0.000 |
 | jev_choice | phantom_grid_sub | chunk-w16000-o2048-min_phalluc | jev_choice:truncate-w16000 | 3840 | 0.136 | 0.126 | 0.147 | 0.000 |
 | jev_choice | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2-bidf | jev_choice:truncate-w16000 | 3840 | 0.136 | 0.124 | 0.148 | 0.000 |
@@ -98,7 +98,9 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 
 ## Fine-tuning
 
-_Pending: GPU stage `finetune` (see HANDOFF.md)._
+| run | base | train_rows | val_auroc | minutes |
+|---|---|---|---|---|
+| modernbert-nli-ft_seed42 | tasksource/ModernBERT-base-nli | 26592 | 0.913 | 161.200 |
 
 ## Discussion
 
