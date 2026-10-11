@@ -114,18 +114,28 @@ def test_client_errors_raise():
         j.score_pairs(["doc"], ["q\x1ea"])
 
 
-def test_too_long_request_shrinks_document():
+@pytest.mark.parametrize("status,payload", [
+    (422, {"detail": "input exceeds the 32k token context length"}),
+    (400, {"detail": {"error_type": "max_tokens_exceeded"}}),  # what the live API returns
+])
+def test_too_long_request_shrinks_document(status, payload):
     calls = []
 
     def api(path, body):
         calls.append(len(body["state"]["document"]))
         if len(calls) == 1:
-            return 422, {"detail": "input exceeds the 32k token context length"}, {}
+            return status, payload, {}
         return FakeAPI()(path, body)
 
     j = _judge(api=api)
     j.score_pairs(["x" * 1000], ["q\x1ex"])
     assert calls[1] == 750 and j.n_shrunk == 1
+
+
+def test_other_400_still_raises():
+    j = _judge(api=lambda path, body: (400, {"detail": {"error_type": "invalid_question"}}, {}))
+    with pytest.raises(ScoringError, match="400"):
+        j.score_pairs(["doc"], ["q\x1ea"])
 
 
 def test_missing_key_raises(monkeypatch):

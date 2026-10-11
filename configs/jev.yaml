@@ -7,7 +7,10 @@
 #   python -m src.cli score --config configs/jev.yaml
 #
 # Windows are in ~4-character pieces (~0.9 tokens each on PHANTOM). Jev reads 32K tokens of state, so a
-# 20,000-piece window (~18K tokens, up to ~30K for the most token-dense text) is read natively in one request.
+# 16,000-piece window (~14K tokens, up to ~26K for the most token-dense text) is read natively in one request.
+# It was 20,000: the probe document came in at 0.74 tokens/piece, but dense 10-K windows reach 1.62 tokens/piece
+# (measured from cached usage), so a 20,000-piece window can reach ~32.4K tokens and Jev rejected one with
+# HTTP 400 max_tokens_exceeded (10-K 20000-beginning cell).
 #   truncate  = first window only: what Jev sees if you send it the document as-is (the 20K/30K cells overflow)
 #   chunk     = every window, answer is faithful if any window supports it (min p_halluc)
 #   retrieve  = BM25 top-2 windows of 1,500 pieces: Jev's own docs recommend filtering irrelevant state first
@@ -20,8 +23,8 @@ runs:
   - name: jev_noul
     detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
     strategies: &jev_strategies
-      - {strategy: truncate, window: 20000}
-      - {strategy: chunk, window: 20000, overlap: 2048}
+      - {strategy: truncate, window: 16000}
+      - {strategy: chunk, window: 16000, overlap: 2048}
       - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2}
     slices: &jev_slices
       - {name: phantom_grid_sub, max_pairs: 60}     # 60 pairs x 32 cells; keeps the whole config near $2.60
@@ -40,7 +43,7 @@ runs:
   # reading the answer's style, not checking it against the document.
   - name: jev_noul_ablate
     detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
-    strategies: [{strategy: truncate, window: 20000}]
+    strategies: [{strategy: truncate, window: 16000}]
     ablate_context: true
     slices:
       - {name: phantom_seed_test, max_pairs: 150}

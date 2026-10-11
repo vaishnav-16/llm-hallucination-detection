@@ -248,7 +248,9 @@ class JevJudge(Detector):
                 resp = self.client.systemone(body)
                 break
             except ScoringError as e:
-                too_long = re.search(r"HTTP 422.*(token|context|length|too long|exceed)", str(e), re.I | re.S)
+                # The live API answers 400 {"detail": {"error_type": "max_tokens_exceeded"}} (seen 2026-10-11 on
+                # dense 10-K tables, ~2.3 tokens per piece); 422 is kept for other "too long" phrasings.
+                too_long = re.search(r"HTTP (400|422).*(max_tokens|token|context|length|too long|exceed)", str(e), re.I | re.S)
                 if not too_long or attempt == 2:
                     raise
                 self.n_shrunk += 1
