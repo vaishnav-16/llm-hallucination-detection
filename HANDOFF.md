@@ -65,9 +65,12 @@ If it runs out of memory, lower `max_length` to 3072 in the config, or `batch_si
 
 ## 4. After each stage: commit results, upload weights
 
+The cloud session may push Jev results to the same branch while you train, so pull before pushing:
+
 ```powershell
 git add artifacts/
 git commit -m "Add <stage> predictions"
+git pull --rebase       # picks up Jev results from the cloud; prediction files never collide
 git push
 python scripts/upload_models.py --username <your-hf-username>     # after fine-tuning only
 ```

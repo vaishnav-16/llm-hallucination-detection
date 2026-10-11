@@ -4,7 +4,8 @@ A YAML config lists runs. Each run has a detector, one or more chunking strategi
 slices. Work is done one *part* (a PHANTOM cell, or a whole small slice) at a time; each finished part
 is written to ``results/runs/<run_id>/<part>.parquet``, so an interrupted run resumes where it stopped.
 When every part of a run is done, the parts are merged into ``artifacts/predictions/<run_id>.parquet``
-and recorded in ``artifacts/predictions/manifest.json`` with a hash of the run's config. A changed
+and recorded in ``artifacts/predictions/manifest/<run_id>.json`` with a hash of the run's config. One file per run
+means the laptop (GPU runs) and the cloud session (API runs) can push in parallel without git conflicts. A changed
 config invalidates the old result.
 
 Example config::
@@ -101,8 +102,11 @@ def output_dir(cfg: dict, limit: int | None = None) -> Path:
 
 
 def _manifest(pred_dir: Path = PRED_DIR) -> dict:
-    path = pred_dir / "manifest.json"
-    return read_json(path) if path.exists() else {}
+    """All run records: one JSON file per run under manifest/ (plus a legacy single manifest.json, if present)."""
+    man = read_json(pred_dir / "manifest.json") if (pred_dir / "manifest.json").exists() else {}
+    for p in sorted((pred_dir / "manifest").glob("*.json")):
+        man[p.stem] = read_json(p)
+    return man
 
 
 def _is_done(job: dict, man: dict, pred_dir: Path) -> bool:
@@ -229,13 +233,12 @@ def run_job(job: dict, det: Detector, limit: int | None = None, pred_dir: Path =
     pred["strategy"] = spec.tag() + ("__ablate" if job["ablate"] else "")
     pred["run_id"] = job["run_id"]
     final = write_table(pred, pred_dir / f"{job['run_id']}.parquet")
-    man = _manifest(pred_dir)
-    man[job["run_id"]] = {
+    record = {
         "hash": job["hash"], "run": job["run"], "slice": job["slice"], "strategy": spec.tag(), "ablate": job["ablate"],
         "detector": det.describe(), "spec": job["spec"], "rows": int(len(pred)), "limit": limit or job.get("max_pairs"),
         "elapsed_s": round(time.time() - t0, 1), "git_commit": _git_commit(), "created": _dt.datetime.now().isoformat(timespec="seconds"),
     }
-    write_json(man, pred_dir / "manifest.json")
+    write_json(record, pred_dir / "manifest" / f"{job['run_id']}.json")
     return final
 
 

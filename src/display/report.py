@@ -267,7 +267,7 @@ def generate_report() -> Path:
     if spend_path.exists():
         sp = read_json(spend_path)
         revs += (f"\n- TypeSafe Jev API, model pinned to `jev-1.13.0` (served model ids are recorded in "
-                 f"`artifacts/predictions/manifest.json`); {sp['requests']} live requests, {sp['input_tokens']:,} input tokens, ${sp['usd']:.2f}")
+                 f"`artifacts/predictions/manifest/`); {sp['requests']} live requests, {sp['input_tokens']:,} input tokens, ${sp['usd']:.2f}")
     sections.append("## Reproducibility\n\nPinned revisions:\n\n" + revs + "\n\nRun `python -m src.cli status` to see how each artifact is produced.\n")
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

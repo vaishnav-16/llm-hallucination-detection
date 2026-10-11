@@ -44,7 +44,7 @@ def _newer_than_predictions(path: Path) -> Callable[[], bool]:
     def check() -> bool:
         if not path.exists():
             return False
-        inputs = list(PRED_DIR.glob("*.parquet")) + [PRED_DIR / "manifest.json"]
+        inputs = list(PRED_DIR.glob("*.parquet")) + list((PRED_DIR / "manifest").glob("*.json"))
         latest = max((p.stat().st_mtime for p in inputs if p.exists()), default=0.0)
         return path.stat().st_mtime >= latest
     return check

@@ -110,3 +110,15 @@ def test_splits_are_leak_free():
     assert (hal.groupby("pair_id")["split"].nunique() == 1).all()
     # deterministic
     assert splits.build_splits(hal, rt_train, rt_test, seeds, cell_pairs, grid_sub_pairs=5)["splits"] == doc["splits"]
+
+
+def test_manifest_is_one_file_per_run(tmp_path):
+    import json
+
+    from src.verify.runner import _manifest
+
+    (tmp_path / "manifest").mkdir()
+    (tmp_path / "manifest.json").write_text(json.dumps({"old_run": {"hash": "a"}}))  # legacy single file still read
+    (tmp_path / "manifest" / "gpu_run.json").write_text(json.dumps({"hash": "b"}))
+    (tmp_path / "manifest" / "jev_run.json").write_text(json.dumps({"hash": "c"}))
+    assert {k: v["hash"] for k, v in _manifest(tmp_path).items()} == {"old_run": "a", "gpu_run": "b", "jev_run": "c"}
