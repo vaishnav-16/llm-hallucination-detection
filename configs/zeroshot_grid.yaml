@@ -10,7 +10,7 @@ runs:
     strategies:
       - {strategy: truncate, window: 2048}
       - {strategy: chunk, window: 2048, overlap: 1024}
-      - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 2}
+      - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 2, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
 
   - name: modernbert_nli
@@ -18,7 +18,7 @@ runs:
     strategies:
       - {strategy: truncate, window: 1536}
       - {strategy: chunk, window: 1536, overlap: 1024}
-      - {strategy: retrieve, window: 1536, overlap: 1024, top_k: 2}
+      - {strategy: retrieve, window: 1536, overlap: 1024, top_k: 2, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
 
   - name: lettucedetect
@@ -26,7 +26,7 @@ runs:
     strategies:
       - {strategy: truncate, window: 3584}
       - {strategy: chunk, window: 3584, overlap: 1536}
-      - {strategy: retrieve, window: 3584, overlap: 1536, top_k: 2}
+      - {strategy: retrieve, window: 3584, overlap: 1536, top_k: 2, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
 
   - name: deberta_nli   # 512-token comparison: cannot hold most seed passages in one window ("partial evidence")
@@ -34,7 +34,7 @@ runs:
     strategies:
       - {strategy: truncate, window: 400}
       - {strategy: chunk, window: 400, overlap: 128}
-      - {strategy: retrieve, window: 400, overlap: 128, top_k: 3}
+      - {strategy: retrieve, window: 400, overlap: 128, top_k: 3, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
 
   # Context ablation (shortcut control): same detectors with an empty context. Cheap.

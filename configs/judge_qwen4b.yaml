@@ -7,6 +7,6 @@ runs:
     detector: {type: local_llm, model: qwen3_4b, load_in_4bit: true, max_length: 13000, batch_size: 1}
     strategies:
       - {strategy: chunk, window: 12000, overlap: 2048}
-      - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 3}
+      - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 3, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
     max_pairs: 40

@@ -9,7 +9,7 @@ runs:
     strategies:
       - {strategy: truncate, window: 7168}
       - {strategy: chunk, window: 7168, overlap: 2048}
-      - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 2}
+      - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 2, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_val, halueval_norm_test, halueval_norm_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
 
   - name: modernbert_ft_s42_full    # headline detector on every PHANTOM test row
