@@ -7,7 +7,7 @@ runs:
     detector: {type: api_judge, provider: gemini, max_length: 30000}
     strategies:
       - {strategy: truncate, window: 30000}
-      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 3}
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 3, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_val, ragtruth_test]
     max_pairs: 100
 
@@ -15,6 +15,6 @@ runs:
     detector: {type: api_judge, provider: dartmouth, max_length: 6000}
     strategies:
       - {strategy: truncate, window: 6000}
-      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 3}
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 3, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_val, ragtruth_test]
     max_pairs: 100

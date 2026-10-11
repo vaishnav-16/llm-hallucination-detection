@@ -60,6 +60,13 @@ logged pairs/s with the estimate.
 Seeds 43/44 and `modernbert_ft_s42_full` (every PHANTOM row) are the expensive parts of stage 4. Run them last
 or overnight. To try a single cheap job first: `python -m src.cli score --config configs/zeroshot_grid.yaml --device cuda --only deberta_nli`.
 
+**Retrieve strategies use `retriever: bm25_blockidf`.** Add it to every `strategy: retrieve` line before that config
+runs (`{strategy: retrieve, window: ..., overlap: ..., top_k: ..., retriever: bm25_blockidf}`). The default BM25 is fitted on the
+overlapping windows themselves, so when a context splits into only a few windows the evidence passage gets a negative IDF
+and is retrieved less often (ModernBERT 1536/1024 at 2K: 59% vs 97% of pairs; LettuceDetect 3584/1536 at 5K: 77% vs 98%).
+Jev is reported with it, so every detector needs it for a like-for-like comparison. The run tag gains `-bidf`, so old
+retrieve predictions stay as they are. See the docstring of `src/verify/chunking.py`.
+
 **Before stage 1, run a 20-step fine-tune** to check memory: `python -m src.cli finetune --config configs/finetune_modernbert.yaml --device cuda --seeds 42 --max-steps 20`.
 If it runs out of memory, lower `max_length` to 3072 in the config, or `batch_size` to 1 with `grad_accum` 16.
 
