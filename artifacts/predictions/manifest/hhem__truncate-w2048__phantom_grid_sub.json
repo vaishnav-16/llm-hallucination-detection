@@ -1,0 +1,23 @@
+{
+  "hash": "594adf4a5168",
+  "run": "hhem",
+  "slice": "phantom_grid_sub",
+  "strategy": "truncate-w2048",
+  "ablate": false,
+  "detector": {
+    "name": "hhem",
+    "requires": "gpu",
+    "max_length": 2560,
+    "premises_truncated": 13,
+    "attention": "t5_bias_sdpa"
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 2048
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 551.1,
+  "git_commit": "caf2447",
+  "created": "2026-10-11T19:42:38"
+}
