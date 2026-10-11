@@ -257,10 +257,17 @@ def generate_report() -> Path:
         "supports the answer) suits it; claims needing evidence from several windows are not tested.\n"
         "- 512-token models (DeBERTa) cannot hold most seed passages in one window; their results are partial-evidence results.\n"
         "- `grid_sub` uses 200 pairs per filing per cell; CIs reflect this.\n"
-        "- API judges change over time; the API results are a secondary comparison and are pinned to the model ids in the manifest.\n"
+        "- API judges (Jev, Dartmouth Chat, Gemini) can change behind the same name; each run records the model id that "
+        "answered, and Jev is pinned to `jev-1.13.0` rather than the moving `jev-latest` alias.\n"
+        "- Jev results use a 60-pair-per-cell PHANTOM sample (cost); its CIs are wider than the encoders' 200-pair grid.\n"
     )
 
     revs = "\n".join(f"- `{v['repo_id']}` @ `{v['revision'][:12]}`" for v in {**DATASETS, **MODELS}.values() if v.get("revision"))
+    spend_path = ARTIFACTS_DIR / "api_cache" / "jev_spend.json"
+    if spend_path.exists():
+        sp = read_json(spend_path)
+        revs += (f"\n- TypeSafe Jev API, model pinned to `jev-1.13.0` (served model ids are recorded in "
+                 f"`artifacts/predictions/manifest.json`); {sp['requests']} live requests, {sp['input_tokens']:,} input tokens, ${sp['usd']:.2f}")
     sections.append("## Reproducibility\n\nPinned revisions:\n\n" + revs + "\n\nRun `python -m src.cli status` to see how each artifact is produced.\n")
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

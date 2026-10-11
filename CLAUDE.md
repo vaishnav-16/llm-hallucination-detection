@@ -47,7 +47,7 @@ configs/            YAML experiment configs (smoke, zeroshot_grid, finetune_*, f
 src/config.py       paths, pinned HF revisions (datasets + models), seeds, device selection
 src/data/           loaders (halueval, phantom, ragtruth), schema validation, splits, data card, answer rewrite
 src/detectors/      base (p_halluc contract, OOM-halving batch loop), hf_models (HHEM, seq-cls, LettuceDetect),
-                    llm_judge (local Qwen), api_judge (Dartmouth Chat / Gemini, cached), baselines, stub
+                    llm_judge (local Qwen), api_judge (Dartmouth Chat / Gemini, cached), jev (TypeSafe Jev), baselines, stub
 src/verify/         chunking (truncate / chunk / retrieve; min/mean/top-k aggregation), slices, runner (resumable)
 src/train/          finetune (NLI-initialised binary head, val-only selection), augment (distractor padding)
 src/eval/           metrics (AUROC, F1, ECE, pair-clustered bootstrap, McNemar), threshold, evaluate
@@ -80,6 +80,19 @@ changed config reruns only that run. `--limit` and `scratch: true` configs write
 - DEF 14A long files regenerate the answers for about a third of the pairs (`variant=reanswered`). The 10-K long files match the seed exactly.
 - Answer-only TF-IDF reaches about 0.96 AUROC on PHANTOM test filings and 0.81 on RAGTruth. The hard subset
   (faithful answer >= 224 chars) lowers PHANTOM's to about 0.89.
+
+## TypeSafe Jev
+
+- `src/detectors/jev.py`, config `configs/jev.yaml`, key `TYPESAFE_API_KEY` (in `.env` or the environment). No GPU.
+  Docs: https://docs.typesafe.ai/llms.txt (append `.md` to any page path). Read the live API and
+  jaggedness pages before changing the adapter.
+- `POST https://api.typesafe.ai/v1/systemone`; model pinned to `jev-1.13.0` (`jev-latest` is a moving alias).
+  32K tokens for state plus the longest question, 64K per request; $0.042 per million input tokens.
+- Every request asks a `noul` and a `choice` per claim. All claims sharing a document chunk go in one request:
+  questions are independent and the state is billed once. `jev_noul` and `jev_choice` send identical requests,
+  so the second run is free from `artifacts/api_cache/jev.jsonl`.
+- Spend is tracked in `artifacts/api_cache/jev_spend.json`; `max_usd` (4.5) stops runs before the $5 credit runs out.
+  Always run `score --config configs/jev.yaml --dry-run` before a live run, and commit the cache with the predictions.
 
 ## Style
 

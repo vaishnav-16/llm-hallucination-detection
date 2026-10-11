@@ -61,6 +61,7 @@ HaluEval, and a cross-domain drop on PHANTOM. An audit found that these numbers 
 | Shortcut controls | answer-length LR, answer TF-IDF LR, lexical support; context ablation of each model |
 | Zero-shot encoders | Vectara HHEM-2.1-open; `tasksource/ModernBERT-base-nli`; `MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`; LettuceDetect (ModernBERT) |
 | Fine-tuned (main) | ModernBERT-base from the NLI checkpoint, positions extended to 8K, distractor augmentation, 3 seeds; DeBERTa-v3-base NLI (512-token comparison) |
+| Decision model (API) | **TypeSafe Jev** (`jev-1.13.0`): a System One model that returns calibrated probabilities instead of text. Each claim is asked as a yes/no *noul* ("is every detail supported by the document?") and as a 3-way *choice* (supported / contradicted / unsupported) |
 | LLM judges | Qwen3-4B-Instruct-2507 (4-bit, laptop), Qwen3-8B (Kaggle); API: Dartmouth Chat, Gemini (secondary) |
 
 ## Quick start
@@ -72,6 +73,14 @@ python -m pytest
 python -m src.cli status            # what is done, what is left, and where each stage must run
 python -m src.cli baselines         # shortcut audit (CPU, ~2 min)
 python -m src.cli smoke             # every stage on a few rows (CPU, ~15 min)
+```
+
+Jev needs no GPU and runs anywhere with `TYPESAFE_API_KEY` set:
+
+```bash
+python -m src.cli probe-jev                                  # < $0.01 live check
+python -m src.cli score --config configs/jev.yaml --dry-run  # cost estimate (~$2.60), nothing sent
+python -m src.cli score --config configs/jev.yaml            # budget guard stops at $4.50
 ```
 
 GPU stages (fine-tuning, the zero-shot and fine-tuned grids, the Qwen judge) run on the laptop. **See

@@ -5,6 +5,7 @@ Commands:
   baselines          answer-only / lexical / ablation shortcut baselines              (cpu)
   rewrite-halueval   label-blind answer rewrite for the normalized HaluEval variant    (api)
   probe-api          check context limit, logprobs and latency of configured APIs     (api)
+  probe-jev          tiny live check of TypeSafe Jev (models, grouping, long context) (api)
   score              run detectors x strategies from a YAML config                    (cpu / gpu / api)
   finetune           fine-tune an encoder from a YAML config                          (gpu)
   evaluate           metrics with bootstrap CIs, McNemar tests, calibration          (cpu)
@@ -66,9 +67,21 @@ def cmd_probe(args: argparse.Namespace) -> None:
 
 
 def cmd_score(args: argparse.Namespace) -> None:
-    from src.verify.runner import run_config
+    from src.verify.runner import estimate_config, run_config
 
+    if args.dry_run:
+        import pandas as pd
+
+        with pd.option_context("display.max_rows", 500, "display.width", 200, "display.max_colwidth", 80):
+            print(estimate_config(args.config, limit=args.limit, only=args.only).to_string(index=False))
+        return
     run_config(args.config, device=args.device, limit=args.limit, only=args.only)
+
+
+def cmd_probe_jev(args: argparse.Namespace) -> None:
+    from src.detectors.jev import probe
+
+    probe()
 
 
 def cmd_finetune(args: argparse.Namespace) -> None:
@@ -121,7 +134,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     s.add_argument("--limit", type=int, default=None, help="cap examples per run (testing)")
     s.add_argument("--only", nargs="*", default=None, help="only these run names from the config")
+    s.add_argument("--dry-run", action="store_true", help="estimate API requests/tokens/cost without calling anything")
     s.set_defaults(func=cmd_score)
+
+    sub.add_parser("probe-jev", help="tiny live check of the TypeSafe Jev API (< $0.01)").set_defaults(func=cmd_probe_jev)
 
     s = sub.add_parser("finetune", help="fine-tune an encoder")
     s.add_argument("--config", required=True)

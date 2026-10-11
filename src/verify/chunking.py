@@ -137,7 +137,8 @@ def build_premises(context: str, query: str, spec: ChunkSpec, span_fn: SpanFn) -
     if spec.strategy == "truncate":
         if len(spans) <= spec.window:
             return [context]
-        return [context[: spans[spec.window - 1][1]]]
+        # Same text as the first `chunk` window, so API judges can serve truncate from the chunk cache.
+        return [context[spans[0][0] : spans[spec.window - 1][1]]]
     chunks = split_windows(context, spans, spec.window, spec.stride)
     if spec.strategy == "retrieve":
         chunks = [chunks[i] for i in retrieve_top_k(chunks, query, spec.top_k)]

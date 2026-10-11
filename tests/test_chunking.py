@@ -90,3 +90,10 @@ def test_hypothesis_format():
     assert hypothesis_text("Who won?", "Alice.", "QA") == "Who won? Alice."
     assert hypothesis_text("Summarize:", "A summary.", "Summary") == "A summary."
     assert hypothesis_text("Who won?", "Alice.", "QA", fmt="answer") == "Alice."
+
+
+def test_truncate_equals_first_chunk_window():
+    text = "\n  " + _doc(300)  # leading whitespace must not make the two differ
+    (trunc,) = build_premises(text, "q", ChunkSpec(strategy="truncate", window=100), whitespace_spans)
+    first = build_premises(text, "q", ChunkSpec(strategy="chunk", window=100, overlap=20), whitespace_spans)[0]
+    assert trunc == first

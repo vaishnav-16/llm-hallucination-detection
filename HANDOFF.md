@@ -83,7 +83,19 @@ python -m src.cli report        # figures + report/final_report.md
 streamlit run app.py            # dashboard
 ```
 
-## 6. Optional API stages (no GPU; can run in the cloud session)
+## 6. TypeSafe Jev (no GPU; run it in either environment, any time)
+
+Jev doesn't depend on the training, so it can run before, during or after the GPU stages.
+
+1. Put `TYPESAFE_API_KEY=...` in `.env` (cloud session: add it as an environment variable in the environment settings,
+   then start a new session).
+2. `python -m src.cli probe-jev` checks the key, grouping and a long request, for less than $0.01. It writes `artifacts/jev_probe.json`.
+3. `python -m src.cli score --config configs/jev.yaml --dry-run` gives the cost estimate (~$2.60). Nothing is sent.
+4. `python -m src.cli score --config configs/jev.yaml` runs it. The budget guard stops at $4.50. It is resumable, and finished
+   requests are cached.
+5. Commit `artifacts/predictions/`, `artifacts/api_cache/jev.jsonl` and `artifacts/api_cache/jev_spend.json`.
+
+## 7. Optional API stages (no GPU; can run in the cloud session)
 
 1. Create `.env` in the repo root (git ignores it):
    ```

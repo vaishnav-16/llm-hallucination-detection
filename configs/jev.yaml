@@ -1,0 +1,51 @@
+# TypeSafe Jev (jev-1.13.0, pinned) as a zero-shot hallucination detector. API only: runs in the cloud session or
+# on the laptop, no GPU. Needs TYPESAFE_API_KEY. Budget guard: stops before spend reaches max_usd (default $4.50,
+# for a $5 credit). Dry-run estimate for this file: ~$2.60 in total (truncate and jev_choice come from the cache).
+# Check the estimate first:
+#   python -m src.cli probe-jev
+#   python -m src.cli score --config configs/jev.yaml --dry-run
+#   python -m src.cli score --config configs/jev.yaml
+#
+# Windows are in ~4-character pieces (~0.9 tokens each on PHANTOM). Jev reads 32K tokens of state, so a
+# 20,000-piece window (~18K tokens, up to ~30K for the most token-dense text) is read natively in one request.
+#   truncate  = first window only: what Jev sees if you send it the document as-is (the 20K/30K cells overflow)
+#   chunk     = every window, answer is faithful if any window supports it (min p_halluc)
+#   retrieve  = BM25 top-2 windows of 1,500 pieces: Jev's own docs recommend filtering irrelevant state first
+#
+# jev_noul and jev_choice send byte-identical requests (both questions are in every request), so jev_choice is
+# served from the cache at no extra cost. The two answers of a pair share one request (questions are evaluated
+# independently; the document is billed once).
+name: jev
+runs:
+  - name: jev_noul
+    detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: &jev_strategies
+      - {strategy: truncate, window: 20000}
+      - {strategy: chunk, window: 20000, overlap: 2048}
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2}
+    slices: &jev_slices
+      - {name: phantom_grid_sub, max_pairs: 60}     # 60 pairs x 32 cells; keeps the whole config near $2.60
+      - {name: phantom_val, max_pairs: 150}
+      - {name: ragtruth_test, max_pairs: 150}
+      - {name: ragtruth_val, max_pairs: 100}
+      - {name: halueval_test, max_pairs: 500}
+      - {name: halueval_val, max_pairs: 300}
+
+  - name: jev_choice
+    detector: {type: jev, answer: choice, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_strategies
+    slices: *jev_slices
+
+  # Shortcut control: the same questions with an empty document. If Jev still separates the classes, it is
+  # reading the answer's style, not checking it against the document.
+  - name: jev_noul_ablate
+    detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: [{strategy: truncate, window: 20000}]
+    ablate_context: true
+    slices:
+      - {name: phantom_seed_test, max_pairs: 150}
+      - {name: phantom_val, max_pairs: 150}
+      - {name: ragtruth_test, max_pairs: 150}
+      - {name: ragtruth_val, max_pairs: 100}
+      - {name: halueval_test, max_pairs: 500}
+      - {name: halueval_val, max_pairs: 300}
