@@ -1,84 +1,55 @@
-"""FastHalluCheck — Interactive Streamlit Dashboard.
+"""FastHalluCheck dashboard: browse the v2 evaluation artifacts (metrics, comparisons, predictions).
 
-Launch: streamlit run app.py
+Launch with ``streamlit run app.py``. Everything shown is read from ``artifacts/`` (committed), so the
+dashboard works on a fresh clone; the optional text join on the Predictions page uses the git-ignored
+``data/`` and degrades to metadata-only when it is absent.
 """
+
+from __future__ import annotations
+
+import importlib
+import logging
+import traceback
 
 import streamlit as st
 
-from src.dashboard.config import PAGE_TITLE, PAGE_ICON, LAYOUT
+from src.config import setup_logging
+from src.dashboard import data
+from src.dashboard.config import LAYOUT, PAGE_ICON, PAGE_TITLE, PAGES
 
-# Page config (must be first Streamlit command)
-st.set_page_config(
-    page_title=PAGE_TITLE,
-    page_icon=PAGE_ICON,
-    layout=LAYOUT,
-    initial_sidebar_state="expanded",
-)
+logger = logging.getLogger(__name__)
+
+PAGE_MODULES = {
+    "Overview": "src.dashboard.pages.overview",
+    "Results": "src.dashboard.pages.results",
+    "Length & position (PHANTOM)": "src.dashboard.pages.length_position",
+    "Comparisons & seeds": "src.dashboard.pages.comparisons",
+    "Predictions": "src.dashboard.pages.predictions",
+}
 
 
-def main():
-    # Sidebar navigation
+def main() -> None:
+    setup_logging()
+    st.set_page_config(page_title=PAGE_TITLE, page_icon=PAGE_ICON, layout=LAYOUT, initial_sidebar_state="expanded")
+
     with st.sidebar:
         st.title(f"{PAGE_ICON} {PAGE_TITLE}")
-        st.markdown("Hallucination Detection Evaluation")
+        st.caption("Hallucination-detector evaluation (v2 artifacts)")
+        page = st.radio("Navigation", PAGES, label_visibility="collapsed")
         st.divider()
+        with st.expander("Data status"):
+            st.caption(f"Reading from `{data.artifacts_root()}`")
+            for name, status in data.artifact_status().items():
+                st.text(f"{name}: {status}")
 
-        page = st.radio(
-            "Navigation",
-            [
-                "Overview",
-                "Data Explorer",
-                "Threshold Tuner",
-                "Error Browser",
-                "Model Comparison",
-                "Cross-Domain Analysis",
-            ],
-            label_visibility="collapsed",
-        )
-
-        st.divider()
-
-        # Data availability indicator
-        from src.dashboard.state import SessionState
-        available = SessionState.get_available_data()
-        n_available = sum(available.values())
-        n_total = len(available)
-        st.caption(f"Data: {n_available}/{n_total} files available")
-
-        with st.expander("Data Status"):
-            for name, exists in sorted(available.items()):
-                icon = "✓" if exists else "✗"
-                st.text(f"{icon} {name}")
-
-    # Route to selected page
     try:
-        if page == "Overview":
-            from src.dashboard.pages.overview import render
-        elif page == "Data Explorer":
-            from src.dashboard.pages.explorer import render
-        elif page == "Threshold Tuner":
-            from src.dashboard.pages.threshold_tuner import render
-        elif page == "Error Browser":
-            from src.dashboard.pages.error_browser import render
-        elif page == "Model Comparison":
-            from src.dashboard.pages.model_comparison import render
-        elif page == "Cross-Domain Analysis":
-            from src.dashboard.pages.cross_domain import render
-        else:
-            from src.dashboard.pages.overview import render
-
-        render()
-
-    except Exception as e:
-        st.error(f"Error loading page: {e}")
-        st.markdown("""
-        **Troubleshooting:**
-        1. Make sure you've run the pipeline: `python run_all.py`
-        2. Check that result files exist in `results/`
-        3. Install dependencies: `pip install streamlit plotly`
-        """)
-        import traceback
-        with st.expander("Error Details"):
+        importlib.import_module(PAGE_MODULES[page]).render()
+    except Exception as e:  # show the error in the page instead of a blank screen
+        logger.exception("page %s failed", page)
+        st.error(f"Error rendering page '{page}': {e}")
+        st.markdown("Check that `artifacts/metrics/metrics_long.csv` and `artifacts/predictions/` exist "
+                    "(they are produced by the `evaluate` and `verify` stages).")
+        with st.expander("Error details"):
             st.code(traceback.format_exc())
 
 
