@@ -87,7 +87,7 @@ def cmd_probe_jev(args: argparse.Namespace) -> None:
 def cmd_finetune(args: argparse.Namespace) -> None:
     from src.train.finetune import finetune_from_config
 
-    finetune_from_config(args.config, device=args.device, seeds=args.seeds, max_steps=args.max_steps)
+    finetune_from_config(args.config, device=args.device, seeds=args.seeds, max_steps=args.max_steps, force=args.force)
 
 
 def cmd_evaluate(args: argparse.Namespace) -> None:
@@ -143,7 +143,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--config", required=True)
     s.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     s.add_argument("--seeds", nargs="*", type=int, default=None)
-    s.add_argument("--max-steps", type=int, default=None, help="cap training steps (smoke tests)")
+    s.add_argument("--max-steps", type=int, default=None,
+                   help="cap training steps (memory/smoke checks; saved under results/scratch_models, not models/)")
+    s.add_argument("--force", action="store_true", help="retrain seeds that already have a finished model")
     s.set_defaults(func=cmd_finetune)
 
     sub.add_parser("evaluate", help="compute metrics").set_defaults(func=cmd_evaluate)

@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from src.config import ARTIFACTS_DIR, MODELS, MODELS_DIR, ROOT, get_device, seed_everything
+from src.config import ARTIFACTS_DIR, MODELS, MODELS_DIR, RESULTS_DIR, ROOT, get_device, seed_everything
 from src.data.store import write_json
 from src.eval.metrics import auroc, threshold_metrics
 from src.train.augment import add_distractors
@@ -35,6 +35,8 @@ from src.verify.chunking import hypothesis_text
 from src.verify.slices import get_slice
 
 logger = logging.getLogger(__name__)
+
+SCRATCH_MODELS_DIR = RESULTS_DIR / "scratch_models"  # step-capped runs; git-ignored, never scored or uploaded
 
 
 def _load_slices(names: list[str], max_rows: int | None = None) -> pd.DataFrame:
@@ -219,10 +221,26 @@ def finetune(cfg: dict, seed: int, device: str = "auto", max_steps: int | None =
     return out_dir
 
 
-def finetune_from_config(path: str, device: str = "auto", seeds: list[int] | None = None, max_steps: int | None = None) -> None:
+def is_trained(out_dir: Path) -> bool:
+    """True if ``out_dir`` holds a finished full run (not a step-capped smoke run)."""
+    meta = Path(out_dir) / "fhc_meta.json"
+    return meta.exists() and json.loads(meta.read_text(encoding="utf-8")).get("max_steps") is None
+
+
+def finetune_from_config(path: str, device: str = "auto", seeds: list[int] | None = None, max_steps: int | None = None,
+                         force: bool = False, models_dir: Path = MODELS_DIR) -> None:
+    """Train every seed in a config. Rerunning the same command skips seeds that already finished.
+
+    Step-capped runs (``max_steps``) are memory/smoke checks: they go to ``results/scratch_models`` so a
+    20-step checkpoint can never be scored or uploaded in place of the real model under ``models/``.
+    """
     p = Path(path)
     if not p.exists():
         p = ROOT / path
     cfg = yaml.safe_load(p.read_text(encoding="utf-8"))
+    out_root = SCRATCH_MODELS_DIR if max_steps else Path(models_dir)
     for seed in seeds or cfg.get("seeds", [42]):
-        finetune(cfg, seed, device, max_steps)
+        if not max_steps and not force and is_trained(out_root / cfg["name"] / f"seed{seed}"):
+            logger.info("Skipping %s seed %d: already trained (pass --force to retrain)", cfg["name"], seed)
+            continue
+        finetune(cfg, seed, device, max_steps, models_dir=out_root)
