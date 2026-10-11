@@ -8,6 +8,17 @@ Strategies
 - ``chunk``     overlapping windows over the whole premise; score every window, then aggregate.
 - ``retrieve``  overlapping windows, keep the ``top_k`` windows by BM25 against question + answer, then aggregate.
 
+Retrievers (``retriever``, only used by ``retrieve``)
+- ``bm25``           BM25Okapi fitted on the overlapping windows themselves (the original behaviour, the default).
+                     Its IDF counts a passage once per window that contains it, so with few, heavily overlapping
+                     windows (a 2K-token PHANTOM context is ~4 windows of 1,500 with stride 750) a term in 2 of 3
+                     windows gets a negative IDF: the evidence passage, sitting in the overlap, counts against the
+                     windows that contain it. On PHANTOM 2K/middle the top-2 windows held the whole evidence
+                     passage for 13% of pairs.
+- ``bm25_blockidf``  the same BM25 window scoring, with IDF from non-overlapping blocks of ``stride // 3`` units,
+                     so document frequency no longer depends on the overlap (2K/middle: 92%; longer contexts
+                     unchanged within a few points).
+
 Containment guarantee
 With window W and overlap O (stride S = W - O), any contiguous span of at most O + 1 tokens lies
 entirely inside at least one window (see ``guaranteed_span``). Choose O >= the measured p95 length
@@ -21,13 +32,16 @@ Aggregation is named by its effect on ``p_halluc`` (higher = more likely halluci
 
 from __future__ import annotations
 
+import math
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Callable, Protocol, Sequence
 
 import numpy as np
 
 STRATEGIES = ("truncate", "chunk", "retrieve")
+RETRIEVERS = ("bm25", "bm25_blockidf")
 AGGREGATIONS = ("min_phalluc", "mean_phalluc", "topk_mean")
 
 Span = tuple[int, int]
@@ -44,6 +58,7 @@ class ChunkSpec:
     overlap: int | None = None      # default: window // 2
     top_k: int = 3
     aggregation: str = "min_phalluc"
+    retriever: str = "bm25"
     extra: dict = field(default_factory=dict, compare=False, hash=False)
 
     def __post_init__(self) -> None:
@@ -51,6 +66,8 @@ class ChunkSpec:
             raise ValueError(f"strategy must be one of {STRATEGIES}, got {self.strategy!r}")
         if self.aggregation not in AGGREGATIONS:
             raise ValueError(f"aggregation must be one of {AGGREGATIONS}, got {self.aggregation!r}")
+        if self.retriever not in RETRIEVERS:
+            raise ValueError(f"retriever must be one of {RETRIEVERS}, got {self.retriever!r}")
         if self.window <= 0:
             raise ValueError("window must be positive")
         if not 0 <= self.effective_overlap < self.window:
@@ -69,7 +86,8 @@ class ChunkSpec:
         if self.strategy == "truncate":
             return f"truncate-w{self.window}"
         base = f"{self.strategy}-w{self.window}-o{self.effective_overlap}-{self.aggregation}"
-        return base + (f"-k{self.top_k}" if self.strategy == "retrieve" or self.aggregation == "topk_mean" else "")
+        base += f"-k{self.top_k}" if self.strategy == "retrieve" or self.aggregation == "topk_mean" else ""
+        return base + ("-bidf" if self.strategy == "retrieve" and self.retriever == "bm25_blockidf" else "")
 
 
 def guaranteed_span(window: int, overlap: int) -> int:
@@ -131,6 +149,26 @@ def retrieve_top_k(chunks: Sequence[str], query: str, k: int) -> list[int]:
     return sorted(int(i) for i in top)
 
 
+def retrieve_top_k_blockidf(chunks: Sequence[str], blocks: Sequence[str], query: str, k: int,
+                            k1: float = 1.5, b: float = 0.75) -> list[int]:
+    """Like ``retrieve_top_k``, but document frequencies come from non-overlapping ``blocks`` of the same text.
+
+    IDF uses the BM25+ style ``log(1 + (N - df + 0.5) / (df + 0.5))``, which is never negative.
+    """
+    if len(chunks) <= k:
+        return list(range(len(chunks)))
+    q = set(_bm25_tokens(query))
+    block_sets = [set(_bm25_tokens(t)) for t in blocks]
+    n = len(block_sets)
+    idf = {t: math.log(1 + (n - df + 0.5) / (df + 0.5)) for t in q for df in [sum(t in bs for bs in block_sets)]}
+    counts = [Counter(_bm25_tokens(c)) for c in chunks]
+    lengths = [sum(c.values()) for c in counts]
+    avg = max(1e-9, sum(lengths) / len(lengths))
+    scores = [sum(idf[t] * c[t] * (k1 + 1) / (c[t] + k1 * (1 - b + b * ln / avg)) for t in q) for c, ln in zip(counts, lengths)]
+    top = np.argsort(-np.asarray(scores), kind="stable")[:k]
+    return sorted(int(i) for i in top)
+
+
 def build_premises(context: str, query: str, spec: ChunkSpec, span_fn: SpanFn) -> list[str]:
     """Premise chunk(s) for one example under ``spec``. ``query`` is used only by ``retrieve``."""
     spans = span_fn(context)
@@ -141,7 +179,12 @@ def build_premises(context: str, query: str, spec: ChunkSpec, span_fn: SpanFn) -
         return [context[spans[0][0] : spans[spec.window - 1][1]]]
     chunks = split_windows(context, spans, spec.window, spec.stride)
     if spec.strategy == "retrieve":
-        chunks = [chunks[i] for i in retrieve_top_k(chunks, query, spec.top_k)]
+        if spec.retriever == "bm25_blockidf":
+            block = max(1, spec.stride // 3)
+            idx = retrieve_top_k_blockidf(chunks, split_windows(context, spans, block, block), query, spec.top_k)
+        else:
+            idx = retrieve_top_k(chunks, query, spec.top_k)
+        chunks = [chunks[i] for i in idx]
     return chunks
 
 

@@ -96,6 +96,12 @@ def cmd_evaluate(args: argparse.Namespace) -> None:
     evaluate_all()
 
 
+def cmd_stack(args: argparse.Namespace) -> None:
+    from src.eval.stack import run_stacks
+
+    run_stacks(args.config)
+
+
 def cmd_report(args: argparse.Namespace) -> None:
     from src.display.report import generate_report
 
@@ -147,6 +153,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="cap training steps (memory/smoke checks; saved under results/scratch_models, not models/)")
     s.add_argument("--force", action="store_true", help="retrain seeds that already have a finished model")
     s.set_defaults(func=cmd_finetune)
+
+    s = sub.add_parser("stack", help="combine a detector's answers with a model fitted on validation slices only")
+    s.add_argument("--config", required=True, help="config with a stacks: section (e.g. configs/jev.yaml)")
+    s.set_defaults(func=cmd_stack)
 
     sub.add_parser("evaluate", help="compute metrics").set_defaults(func=cmd_evaluate)
     sub.add_parser("report", help="regenerate report").set_defaults(func=cmd_report)

@@ -32,7 +32,8 @@ class FakeAPI:
         for qid, q in body["questions"].items():
             supported = q["instructions"]["response"] in doc
             if q["type"] == "noul":
-                answers[qid] = {"type": "noul", "noul": 0.9 if supported else 0.2}
+                yes = not supported if qid.endswith("_extra") else supported  # "does it add a detail?" is a yes when unsupported
+                answers[qid] = {"type": "noul", "noul": 0.9 if yes else 0.2}
             else:
                 p = 0.8 if supported else 0.1
                 answers[qid] = {"type": "choice", "choice": "supported" if supported else "unsupported",
@@ -181,3 +182,33 @@ def test_runner_integration_with_chunking():
     trunc = score_frame(df, j, ChunkSpec(strategy="truncate", window=2000))
     assert len(api.calls) == out["n_chunks"].iloc[0], "truncate must be served from the chunk cache"
     assert (trunc["p_halluc"] > 0.5).all()  # truncation cuts the evidence off: both look unsupported
+
+
+@pytest.mark.parametrize("answer", ["support", "numbers", "entities", "extra", "choice2"])
+def test_v2_answers_point_the_same_way(answer):
+    # Every v2 answer must give the unsupported claim the higher p_halluc, whatever the question's polarity.
+    p = _judge(answer, questions="v2").score_pairs(["the payout ratio was 41%", "the payout ratio was 41%"],
+                                                    ["q\x1ethe payout ratio was 41%", "q\x1e73%, driven by Asia"])
+    assert p[0] < p[1]
+
+
+def test_v2_request_shape():
+    j = _judge("support", questions="v2")
+    qs = j.build_body("doc", ["q\x1ea", "q\x1eb"])["questions"]
+    assert len(qs) == 12  # 6 questions per claim, both claims in one request
+    assert list(qs["c0_choice_rev"]["criteria"]) == list(reversed(qs["c0_choice"]["criteria"]))
+    assert all(q["instructions"]["response"] == "a" for k, q in qs.items() if k.startswith("c0_"))
+
+
+def test_v1_request_is_unchanged_by_v2():
+    # The committed cache is keyed by the v1 request body: v1 must still ask exactly these two questions.
+    qs = _judge("noul").build_body("doc", ["q\x1ea"])["questions"]
+    assert sorted(qs) == ["c0_choice", "c0_noul"]
+    assert qs["c0_noul"]["instructions"]["question"] == jev.NOUL_INSTRUCTIONS
+
+
+def test_answer_must_match_question_set():
+    with pytest.raises(ValueError):
+        jev.JevJudge("support")  # v1 has no 'support' answer
+    with pytest.raises(ValueError):
+        jev.JevJudge("noul", questions="v2")

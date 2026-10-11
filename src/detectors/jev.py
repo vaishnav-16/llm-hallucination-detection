@@ -19,6 +19,21 @@ Every request asks two questions per claim:
 The ``jev_noul`` and ``jev_choice`` runs send byte-identical requests, so the second run is served entirely from
 the cache.
 
+Question set ``v2`` (opt-in, ``questions: v2``) follows TypeSafe's own guidance for jev-1.13 (primitives, jaggedness,
+citation-check pages): one snap judgment per question, combined in code, instead of one question that hides several
+judgments ("names, numbers, amounts, dates, causes and qualifiers"); boundary cases (paraphrase, rounding) written
+into the criteria because Jev reads literally; and the Choice asked twice with the options reversed, because Jev
+leans toward the first option. Per claim:
+- ``support``   noul  "does `document` state or directly imply everything `response` says?" -> 1 - noul
+- ``numbers``   noul  every number / amount / percentage / date in `response` is in `document`  -> 1 - noul
+- ``entities``  noul  every person / company / product / place / program named is in `document` -> 1 - noul
+- ``extra``     noul  `response` adds a fact, cause or detail `document` does not mention        -> noul
+- ``choice2``   choice supported / contradicted / unsupported, asked in both orders -> 1 - mean P(supported)
+Every v2 answer is "low when some window covers the whole response", so ``min_phalluc`` over windows applies to
+all of them (a "does `document` contradict it" noul would need max over windows, so it is left out). Extra
+questions only add their own tokens; the state is billed once per request. All v2 answers come from the same
+request, so each ``answer`` is its own run and every run after the first is served from the cache.
+
 Responses are cached in ``artifacts/api_cache/jev.jsonl`` (key hash + answers + usage, never the prompt text), and
 spend is tracked in ``artifacts/api_cache/jev_spend.json``. A ``max_usd`` guard stops a run before it overspends.
 Failures raise: there are no default scores.
@@ -68,6 +83,34 @@ CHOICE_CRITERIA = OrderedDict(
     unsupported="At least one fact in `response` is not in `document`, although nothing in `document` contradicts it.",
 )
 SUMMARY_SUFFIX = " `response` is a summary or description written from `document`."
+
+V2_NOULS: dict[str, tuple[str, dict]] = {
+    "support": (
+        "Does `document` state or directly imply everything that `response` says? `response` answers `question_asked`.",
+        {"true": "Every statement in `response` is stated in `document` or follows directly from it. Paraphrase, a "
+                 "different word order and rounding (for example $1.21 billion written as $1.2 billion) still count as stated.",
+         "false": "At least one statement in `response` is missing from `document` or disagrees with it."},
+    ),
+    "numbers": (
+        "Does every number, amount, percentage and date in `response` appear in `document` with the same value?",
+        {"true": "Each number, amount, percentage and date in `response` matches a value in `document` (rounding "
+                 "allowed), or `response` contains none.",
+         "false": "At least one number, amount, percentage or date in `response` is not in `document` or has a "
+                  "different value there."},
+    ),
+    "entities": (
+        "Is every person, company, product, place and program named in `response` also named in `document`?",
+        {"true": "Every name in `response` appears in `document`, or `response` names nothing.",
+         "false": "`response` names at least one person, company, product, place or program that `document` does not mention."},
+    ),
+    "extra": (
+        "Does `response` include a fact, cause, reason or detail that `document` does not mention? "
+        "`response` answers `question_asked`.",
+        {"true": "`response` adds at least one fact, cause, reason or detail that is not in `document`.",
+         "false": "Everything in `response` is stated in or directly implied by `document`."},
+    ),
+}
+ANSWERS = {"v1": ("noul", "choice"), "v2": (*V2_NOULS, "choice2")}
 
 
 def piece_spans(text: str) -> list[Span]:
@@ -182,10 +225,14 @@ class JevJudge(Detector):
     requires = "api"
 
     def __init__(self, answer: str = "noul", model: str = DEFAULT_MODEL, name: str | None = None, max_usd: float | None = 4.5,
-                 concurrency: int = 6, max_claims_per_request: int = 12, max_length: int = 28000, device: str | None = None):
-        if answer not in ("noul", "choice"):
-            raise ValueError("answer must be 'noul' or 'choice'")
-        self.answer, self.name = answer, name or f"jev_{answer}"
+                 concurrency: int = 6, max_claims_per_request: int = 12, max_length: int = 28000, device: str | None = None,
+                 questions: str = "v1"):
+        if questions not in ANSWERS:
+            raise ValueError(f"questions must be one of {sorted(ANSWERS)}")
+        if answer not in ANSWERS[questions]:
+            raise ValueError(f"answer for question set {questions} must be one of {ANSWERS[questions]}")
+        self.questions, self.answer = questions, answer
+        self.name = name or (f"jev_{answer}" if questions == "v1" else f"jev_{questions}_{answer}")
         self.client = JevClient(model, max_usd)
         self.concurrency, self.max_claims = concurrency, max_claims_per_request
         self.max_length = max_length  # in ~4-char pieces; keep windows well under it
@@ -201,7 +248,7 @@ class JevJudge(Detector):
     def describe(self) -> dict:
         return {
             **super().describe(), "model_requested": self.client.model, "models_served": sorted(self.client.served_models),
-            "answer": self.answer, "session_input_tokens": self.client.session_tokens,
+            "answer": self.answer, "questions": self.questions, "session_input_tokens": self.client.session_tokens,
             "session_usd": round(self.client.session_tokens * USD_PER_INPUT_TOKEN, 4), "premises_shrunk": self.n_shrunk,
         }
 
@@ -212,8 +259,15 @@ class JevJudge(Detector):
             question, _, response = packed.partition(SEP)
             data = {"question_asked": question or "(none: summary or data-to-text task)", "response": response}
             suffix = "" if question else SUMMARY_SUFFIX
-            qs[f"c{i}_noul"] = {"type": "noul", "instructions": {**data, "question": NOUL_INSTRUCTIONS + suffix}, "criteria": NOUL_CRITERIA}
-            qs[f"c{i}_choice"] = {"type": "choice", "instructions": {**data, "question": CHOICE_INSTRUCTIONS + suffix}, "criteria": dict(CHOICE_CRITERIA)}
+            if self.questions == "v1":
+                qs[f"c{i}_noul"] = {"type": "noul", "instructions": {**data, "question": NOUL_INSTRUCTIONS + suffix}, "criteria": NOUL_CRITERIA}
+                qs[f"c{i}_choice"] = {"type": "choice", "instructions": {**data, "question": CHOICE_INSTRUCTIONS + suffix}, "criteria": dict(CHOICE_CRITERIA)}
+                continue
+            for key, (text, criteria) in V2_NOULS.items():
+                qs[f"c{i}_{key}"] = {"type": "noul", "instructions": {**data, "question": text + suffix}, "criteria": criteria}
+            choice_q = {**data, "question": CHOICE_INSTRUCTIONS + suffix}
+            qs[f"c{i}_choice"] = {"type": "choice", "instructions": choice_q, "criteria": dict(CHOICE_CRITERIA)}
+            qs[f"c{i}_choice_rev"] = {"type": "choice", "instructions": choice_q, "criteria": dict(reversed(CHOICE_CRITERIA.items()))}
         return qs
 
     def build_body(self, premise: str, claims: Sequence[str]) -> dict:
@@ -233,12 +287,20 @@ class JevJudge(Detector):
 
     # --- scoring --------------------------------------------------------------
     def _answer(self, resp: dict, i: int) -> float:
-        a = resp["answers"].get(f"c{i}_{self.answer}")
-        if a is None:
-            raise ScoringError(f"Jev response missing answer c{i}_{self.answer}: {list(resp['answers'])[:6]}")
-        if self.answer == "noul":
-            return 1.0 - float(a["noul"])
-        return 1.0 - float(a["probabilities"]["supported"])
+        def get(key: str) -> dict:
+            a = resp["answers"].get(f"c{i}_{key}")
+            if a is None:
+                raise ScoringError(f"Jev response missing answer c{i}_{key}: {list(resp['answers'])[:6]}")
+            return a
+
+        if self.answer == "choice2":
+            return 1.0 - 0.5 * (float(get("choice")["probabilities"]["supported"]) + float(get("choice_rev")["probabilities"]["supported"]))
+        a = get(self.answer)
+        if self.answer == "choice":
+            return 1.0 - float(a["probabilities"]["supported"])
+        if self.answer == "extra":
+            return float(a["noul"])
+        return 1.0 - float(a["noul"])
 
     def _run_group(self, premise: str, claims: list[tuple[str, list[int]]]) -> list[tuple[list[int], float]]:
         texts = [c for c, _ in claims]

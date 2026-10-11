@@ -68,6 +68,22 @@ def test_retrieve_finds_the_needle():
     assert 5 in retrieve_top_k(chunks, "What was the dividend payout ratio? 41 percent", k=2)
 
 
+def test_blockidf_retriever_keeps_an_evidence_passage_that_sits_in_the_overlap():
+    # 40 words, windows of 20 with stride 10 -> 3 windows; the needle (words 12-17) is in windows 0 and 1.
+    words = [f"f{i}" for i in range(40)]
+    words[12:18] = ["dividend", "payout", "ratio", "was", "41", "percent"]
+    words[35] = "fiscal"  # one query word that only the last window has
+    text = " ".join(words)
+    query = "dividend payout ratio was 41 percent fiscal"
+    old = ChunkSpec(strategy="retrieve", window=20, overlap=10, top_k=1)
+    new = ChunkSpec(strategy="retrieve", window=20, overlap=10, top_k=1, retriever="bm25_blockidf")
+    (p_old,) = build_premises(text, query, old, whitespace_spans)
+    (p_new,) = build_premises(text, query, new, whitespace_spans)
+    assert "dividend" not in p_old  # BM25 fitted on the overlapping windows gives the needle a negative IDF
+    assert "dividend payout ratio was 41 percent" in p_new
+    assert new.tag().endswith("-bidf") and not old.tag().endswith("-bidf")
+
+
 def test_aggregation_direction():
     # Faithful if ANY window supports the answer: one supportive window (p=0.05) must win.
     assert aggregate([0.9, 0.05, 0.8], "min_phalluc") == pytest.approx(0.05)

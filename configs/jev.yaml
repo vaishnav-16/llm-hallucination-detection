@@ -26,6 +26,7 @@ runs:
       - {strategy: truncate, window: 16000}
       - {strategy: chunk, window: 16000, overlap: 2048}
       - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2}
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2, retriever: bm25_blockidf}
     slices: &jev_slices
       - {name: phantom_grid_sub, max_pairs: 60}     # 60 pairs x 32 cells; keeps the whole config near $2.60
       - {name: phantom_val, max_pairs: 150}
@@ -52,3 +53,44 @@ runs:
       - {name: ragtruth_val, max_pairs: 100}
       - {name: halueval_test, max_pairs: 500}
       - {name: halueval_val, max_pairs: 300}
+
+  # v2 question set (src/detectors/jev.py): atomic per-claim questions (support, numbers, entities, extra) plus the
+  # Choice asked in both option orders, following TypeSafe's jev-1.13 guidance. All five runs send identical
+  # requests, so only the first one is paid ($0.11 for the validation slices).
+  # Validation-only pilot: v2 had to beat v1 on the validation slices before any test slice was scored. It did not
+  # (artifacts/jev_v2_pilot.json: out-of-fold v2 stack vs v1 noul AUROC +0.013 HaluEval, +0.004 PHANTOM, -0.012
+  # RAGTruth; reversing the Choice options changed nothing), so the test slices were not run and v1 stays the
+  # reported Jev configuration.
+  - name: jev_v2_support
+    detector: {type: jev, questions: v2, answer: support, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: &jev_v2_strategies
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2, retriever: bm25_blockidf}
+    slices: &jev_val_slices
+      - {name: phantom_val, max_pairs: 150}
+      - {name: ragtruth_val, max_pairs: 100}
+      - {name: halueval_val, max_pairs: 300}
+  - name: jev_v2_numbers
+    detector: {type: jev, questions: v2, answer: numbers, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_v2_strategies
+    slices: *jev_val_slices
+  - name: jev_v2_entities
+    detector: {type: jev, questions: v2, answer: entities, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_v2_strategies
+    slices: *jev_val_slices
+  - name: jev_v2_extra
+    detector: {type: jev, questions: v2, answer: extra, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_v2_strategies
+    slices: *jev_val_slices
+  - name: jev_v2_choice2
+    detector: {type: jev, questions: v2, answer: choice2, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_v2_strategies
+    slices: *jev_val_slices
+
+# `python -m src.cli stack --config configs/jev.yaml` (after score): logistic regression over the v2 answers, fitted
+# on the validation slices only (out-of-fold there), applied unchanged to any test slice the members were scored on
+# (none, since the pilot did not pass). See src/eval/stack.py.
+stacks:
+  - name: jev_v2_stack
+    strategy: retrieve-w1500-o750-min_phalluc-k2-bidf
+    members: [jev_v2_support, jev_v2_numbers, jev_v2_entities, jev_v2_extra, jev_v2_choice2]
+    fit_slices: [phantom_val, ragtruth_val, halueval_val]
