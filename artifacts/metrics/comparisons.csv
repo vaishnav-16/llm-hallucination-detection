@@ -83,6 +83,13 @@ jev_choice,phantom_grid_sub,truncate-w16000,answer_tfidf:answer_tfidf,len=5000,7
 jev_choice,phantom_grid_sub,truncate-w16000,answer_tfidf:answer_tfidf,len=10000,720,auroc,-0.016277006172839448,-0.05243721064814811,0.018204089506172787,0.336
 jev_choice,phantom_grid_sub,truncate-w16000,answer_tfidf:answer_tfidf,len=20000,720,auroc,-0.22969907407407408,-0.2639989390432099,-0.19621122685185188,0.0
 jev_choice,phantom_grid_sub,truncate-w16000,answer_tfidf:answer_tfidf,len=30000,720,auroc,-0.33168595679012347,-0.3618549382716049,-0.29976060956790124,0.0
+jev_choice_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,all,12800,auroc,0.01828790283203119,0.004128368530273418,0.032710208129882866,0.012
+jev_choice_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=500,800,auroc,0.029124999999999956,0.014875468750000002,0.04280140624999995,0.0
+jev_choice_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=2000,2400,auroc,0.02280243055555553,0.00768124999999994,0.036845156250000004,0.0
+jev_choice_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=5000,2400,auroc,0.021422569444444428,0.007327473958333339,0.03482728298611111,0.004
+jev_choice_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=10000,2400,auroc,0.019721875,0.004822638888888875,0.03356363715277779,0.012
+jev_choice_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=20000,2400,auroc,0.015133680555555529,-0.0008115885416666242,0.03099841145833335,0.06
+jev_choice_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=30000,2400,auroc,0.008535416666666573,-0.008537534722222162,0.02490592881944441,0.364
 jev_noul,phantom_grid_sub,chunk-w16000-o2048-min_phalluc,jev_noul:truncate-w16000,all,3840,auroc,0.1286905924479167,0.11867988077799485,0.13915033637152774,0.0
 jev_noul,phantom_grid_sub,chunk-w16000-o2048-min_phalluc,jev_noul:truncate-w16000,len=500,240,auroc,0.0,0.0,0.0,1.0
 jev_noul,phantom_grid_sub,chunk-w16000-o2048-min_phalluc,jev_noul:truncate-w16000,len=2000,720,auroc,0.0,0.0,0.0,1.0
@@ -132,3 +139,10 @@ jev_noul,phantom_grid_sub,truncate-w16000,answer_tfidf:answer_tfidf,len=5000,720
 jev_noul,phantom_grid_sub,truncate-w16000,answer_tfidf:answer_tfidf,len=10000,720,auroc,-0.013576388888888902,-0.049054591049382694,0.019908275462962928,0.424
 jev_noul,phantom_grid_sub,truncate-w16000,answer_tfidf:answer_tfidf,len=20000,720,auroc,-0.20744984567901226,-0.2373505979938272,-0.17608092206790124,0.0
 jev_noul,phantom_grid_sub,truncate-w16000,answer_tfidf:answer_tfidf,len=30000,720,auroc,-0.2712229938271604,-0.2990571952160494,-0.2400889274691358,0.0
+jev_noul_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,all,12800,auroc,0.01901857910156246,0.004939947509765597,0.0333044595336914,0.008
+jev_noul_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=500,800,auroc,0.029706249999999934,0.015362343749999941,0.044142421875000004,0.0
+jev_noul_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=2000,2400,auroc,0.023198263888888793,0.008725520833333267,0.03736828993055559,0.0
+jev_noul_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=5000,2400,auroc,0.02240416666666667,0.008231137152777752,0.03642978298611112,0.0
+jev_noul_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=10000,2400,auroc,0.02076215277777771,0.005242951388888884,0.035327057291666686,0.004
+jev_noul_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=20000,2400,auroc,0.016135416666666624,-0.0003451128472222108,0.03202129340277778,0.052
+jev_noul_full,phantom_grid_sub,retrieve-w1500-o750-min_phalluc-k2-bidf,answer_tfidf:answer_tfidf,len=30000,2400,auroc,0.008854513888888804,-0.008182960069444422,0.02522216145833334,0.36
