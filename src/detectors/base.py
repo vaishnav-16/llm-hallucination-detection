@@ -56,6 +56,20 @@ def fit_premise(tokenizer, premise: str, budget: int) -> tuple[str, bool]:
     return premise[: enc["offset_mapping"][budget - 1][1]], True
 
 
+MIN_PREMISE_TOKENS = 64
+
+
+def fit_claim(tokenizer, claim: str, max_length: int, min_premise: int = MIN_PREMISE_TOKENS) -> tuple[str, bool]:
+    """Cut a claim (question + answer) that would leave fewer than ``min_premise`` tokens for the premise.
+
+    Pair encoders truncate only the premise, so a claim longer than the whole window cannot be encoded at
+    all (a few PHANTOM / RAGTruth claims exceed 508 DeBERTa tokens). Such claims keep their beginning; callers
+    count and report every cut. Claims that fit are returned unchanged.
+    """
+    budget = max_length - min_premise - tokenizer.num_special_tokens_to_add(pair=True)
+    return fit_premise(tokenizer, claim, budget)
+
+
 def run_batched(
     items: Sequence,
     fn: Callable[[Sequence], np.ndarray],

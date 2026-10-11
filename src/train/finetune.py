@@ -29,6 +29,7 @@ import yaml
 
 from src.config import ARTIFACTS_DIR, MODELS, MODELS_DIR, RESULTS_DIR, ROOT, get_device, seed_everything
 from src.data.store import write_json
+from src.detectors.base import fit_claim
 from src.eval.metrics import auroc, threshold_metrics
 from src.train.augment import add_distractors
 from src.verify.chunking import hypothesis_text
@@ -97,11 +98,14 @@ def load_model_for_training(base: str, extend_positions: int | None = None):
 
 class _PairDataset:
     def __init__(self, df: pd.DataFrame, tok, max_length: int, hyp_fmt: str):
-        self.enc = tok(
-            df["context"].tolist(),
-            [hypothesis_text(q, r, t, hyp_fmt) for q, r, t in zip(df["question"], df["response"], df["task_type"])],
-            truncation="only_first", max_length=max_length,
-        )
+        hyps, n_cut = [], 0
+        for q, r, t in zip(df["question"], df["response"], df["task_type"]):
+            h, cut = fit_claim(tok, hypothesis_text(q, r, t, hyp_fmt), max_length)
+            hyps.append(h)
+            n_cut += cut
+        if n_cut:
+            logger.warning("%d of %d claims longer than the %d-token window were cut to fit", n_cut, len(hyps), max_length)
+        self.enc = tok(df["context"].tolist(), hyps, truncation="only_first", max_length=max_length)
         self.labels = df["label"].astype(int).tolist()
 
     def __len__(self) -> int:
