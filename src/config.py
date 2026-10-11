@@ -77,4 +77,20 @@ def get_device(requested: str = "auto") -> str:
         raise RuntimeError("--device cuda requested but CUDA is not available")
     device = "cuda" if (requested in ("auto", "cuda") and has_cuda) else "cpu"
     log.info("Using device: %s", device)
+    if device == "cuda":
+        cap_gpu_memory()
     return device
+
+
+# Windows (WDDM) drivers let CUDA spill into shared system RAM instead of raising OOM, so the OOM-halving
+# batch loop never fires and a job silently runs ~10x slower. Capping PyTorch's allocator below the card's
+# dedicated memory turns that spill back into an OutOfMemoryError. The rest covers the CUDA context and display.
+GPU_MEMORY_FRACTION = float(os.environ.get("FHC_GPU_MEMORY_FRACTION", 0.85))
+
+
+def cap_gpu_memory(fraction: float = GPU_MEMORY_FRACTION) -> None:
+    import torch
+
+    torch.cuda.set_per_process_memory_fraction(fraction)
+    total = torch.cuda.get_device_properties(0).total_memory / 2**30
+    logging.getLogger(__name__).info("CUDA allocator capped at %.0f%% of %.1f GB dedicated memory", 100 * fraction, total)

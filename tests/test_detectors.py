@@ -30,3 +30,17 @@ def test_overlong_claim_keeps_its_beginning_and_leaves_room_for_the_premise():
     assert was_cut
     budget = 512 - MIN_PREMISE_TOKENS - 3
     assert cut.split() == words[:budget]
+
+
+def test_cuda_device_caps_the_allocator(monkeypatch):
+    """get_device('cuda') must cap PyTorch's allocator so a Windows sysmem spill raises OOM instead."""
+    import torch
+
+    from src import config
+
+    calls = []
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "set_per_process_memory_fraction", lambda f, *a: calls.append(f))
+    monkeypatch.setattr(torch.cuda, "get_device_properties", lambda i: type("P", (), {"total_memory": 8 * 2**30})())
+    assert config.get_device("cuda") == "cuda"
+    assert calls == [config.GPU_MEMORY_FRACTION]
