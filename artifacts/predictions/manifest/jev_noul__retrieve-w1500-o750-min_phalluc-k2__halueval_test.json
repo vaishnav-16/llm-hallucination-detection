@@ -1,0 +1,31 @@
+{
+  "hash": "2f2fb6d12fca",
+  "run": "jev_noul",
+  "slice": "halueval_test",
+  "strategy": "retrieve-w1500-o750-min_phalluc-k2",
+  "ablate": false,
+  "detector": {
+    "name": "jev_noul",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [
+      "jev-1.13.0"
+    ],
+    "answer": "noul",
+    "session_input_tokens": 43922116,
+    "session_usd": 1.8447,
+    "premises_shrunk": 9
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 1500,
+    "overlap": 750,
+    "top_k": 2
+  },
+  "rows": 1000,
+  "limit": 500,
+  "elapsed_s": 1.6,
+  "git_commit": "7ad33b9",
+  "created": "2026-10-11T03:44:15"
+}

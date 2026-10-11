@@ -1,0 +1,29 @@
+{
+  "hash": "c7d9cd77ad20",
+  "run": "jev_noul",
+  "slice": "halueval_val",
+  "strategy": "truncate-w16000",
+  "ablate": false,
+  "detector": {
+    "name": "jev_noul",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [
+      "jev-1.13.0"
+    ],
+    "answer": "noul",
+    "session_input_tokens": 12949380,
+    "session_usd": 0.5439,
+    "premises_shrunk": 2
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 16000
+  },
+  "rows": 600,
+  "limit": 300,
+  "elapsed_s": 22.0,
+  "git_commit": "7ad33b9",
+  "created": "2026-10-11T03:35:09"
+}

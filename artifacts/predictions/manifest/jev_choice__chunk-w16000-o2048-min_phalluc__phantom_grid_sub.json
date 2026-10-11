@@ -1,0 +1,28 @@
+{
+  "hash": "55e5debeafcd",
+  "run": "jev_choice",
+  "slice": "phantom_grid_sub",
+  "strategy": "chunk-w16000-o2048-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "jev_choice",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [],
+    "answer": "choice",
+    "session_input_tokens": 0,
+    "session_usd": 0.0,
+    "premises_shrunk": 5
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 16000,
+    "overlap": 2048
+  },
+  "rows": 3840,
+  "limit": 60,
+  "elapsed_s": 53.5,
+  "git_commit": "7ad33b9",
+  "created": "2026-10-11T03:48:59"
+}

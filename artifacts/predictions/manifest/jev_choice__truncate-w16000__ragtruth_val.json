@@ -1,0 +1,29 @@
+{
+  "hash": "2ba55579b253",
+  "run": "jev_choice",
+  "slice": "ragtruth_val",
+  "strategy": "truncate-w16000",
+  "ablate": false,
+  "detector": {
+    "name": "jev_choice",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [
+      "jev-1.13.0"
+    ],
+    "answer": "choice",
+    "session_input_tokens": 8171800,
+    "session_usd": 0.3432,
+    "premises_shrunk": 2
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 16000
+  },
+  "rows": 605,
+  "limit": 100,
+  "elapsed_s": 1.1,
+  "git_commit": "7ad33b9",
+  "created": "2026-10-11T03:46:43"
+}

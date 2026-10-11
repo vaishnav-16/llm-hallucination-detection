@@ -1,8 +1,8 @@
 # Length-robust hallucination detection on PHANTOM, RAGTruth and HaluEval
 
-_Generated 2026-10-10 by `python -m src.cli report` from the committed `artifacts/`._
+_Generated 2026-10-11 by `python -m src.cli report` from the committed `artifacts/`._
 
-**Pipeline status.** Done: prepare, baselines, score-smoke, evaluate, report. Pending: rewrite-halueval, probe-api, score-zeroshot, judges-api, finetune, score-finetuned, judge-local. Sections that depend on pending stages say so explicitly.
+**Pipeline status.** Done: prepare, baselines, probe-jev, judge-jev, evaluate. Pending: rewrite-halueval, probe-api, score-smoke, score-zeroshot, judges-api, finetune, score-finetuned, judge-local, report. Sections that depend on pending stages say so explicitly.
 
 ## Research question
 
@@ -31,11 +31,48 @@ A detector only demonstrates that it uses the context where it beats the answer-
 
 AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accuracy are chosen on validation slices only.
 
-| detector | strategy | halueval_test | phantom_grid_full | phantom_grid_full (hard) | ragtruth_test |
-|---|---|---|---|---|---|
-| answer_length | none | 0.982 [0.977, 0.986] | 0.835 [0.820, 0.850] | 0.732 [0.713, 0.755] | 0.685 [0.663, 0.707] |
-| answer_tfidf | none | 0.968 [0.962, 0.974] | 0.957 [0.950, 0.965] | 0.888 [0.869, 0.908] | 0.808 [0.787, 0.828] |
-| lexical_support | full_context | 0.895 [0.881, 0.907] | 0.836 [0.819, 0.852] | 0.814 [0.796, 0.832] | 0.783 [0.764, 0.803] |
+| detector | strategy | halueval_test | phantom_grid_full | phantom_grid_full (hard) | phantom_grid_sub | phantom_grid_sub (hard) | phantom_seed_test | phantom_seed_test (hard) | ragtruth_test |
+|---|---|---|---|---|---|---|---|---|---|
+| answer_length | none | 0.982 [0.977, 0.986] | 0.835 [0.820, 0.850] | 0.732 [0.713, 0.755] | nan | nan | nan | nan | 0.685 [0.663, 0.707] |
+| answer_tfidf | none | 0.968 [0.962, 0.974] | 0.957 [0.950, 0.965] | 0.888 [0.869, 0.908] | nan | nan | nan | nan | 0.808 [0.787, 0.828] |
+| jev_choice | chunk-w16000-o2048-min_phalluc | 0.920 [0.903, 0.935] | nan | nan | 0.969 [0.946, 0.986] | 0.966 [0.926, 0.992] | nan | nan | 0.925 [0.905, 0.945] |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2 | 0.920 [0.903, 0.935] | nan | nan | 0.930 [0.909, 0.948] | 0.937 [0.903, 0.963] | nan | nan | 0.928 [0.908, 0.946] |
+| jev_choice | truncate-w16000 | 0.920 [0.903, 0.935] | nan | nan | 0.832 [0.813, 0.849] | 0.838 [0.806, 0.865] | nan | nan | 0.925 [0.905, 0.945] |
+| jev_noul | chunk-w16000-o2048-min_phalluc | 0.945 [0.931, 0.956] | nan | nan | 0.969 [0.946, 0.986] | 0.961 [0.919, 0.990] | nan | nan | 0.926 [0.906, 0.945] |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2 | 0.945 [0.931, 0.956] | nan | nan | 0.930 [0.909, 0.948] | 0.935 [0.901, 0.961] | nan | nan | 0.929 [0.910, 0.947] |
+| jev_noul | truncate-w16000 | 0.945 [0.931, 0.956] | nan | nan | 0.840 [0.821, 0.856] | 0.844 [0.811, 0.872] | nan | nan | 0.926 [0.906, 0.945] |
+| jev_noul_ablate | truncate-w16000__ablate | 0.654 [0.624, 0.681] | nan | nan | nan | nan | 0.746 [0.720, 0.774] | 0.678 [0.636, 0.726] | 0.518 [0.504, 0.533] |
+| lexical_support | full_context | 0.895 [0.881, 0.907] | 0.836 [0.819, 0.852] | 0.814 [0.796, 0.832] | nan | nan | nan | nan | 0.783 [0.764, 0.803] |
+
+
+### phantom_grid_sub: AUROC vs context length (all pairs)
+
+![length curves](../artifacts/figures/length_curves_phantom_grid_sub.png)
+
+
+### phantom_grid_sub: AUROC vs context length (hard subset)
+
+![length curves](../artifacts/figures/length_curves_phantom_grid_sub_hard.png)
+
+![position heatmap](../artifacts/figures/position_jev_choice_chunk-w16000-o2048-min_phalluc.png)
+
+![position heatmap](../artifacts/figures/position_jev_noul_chunk-w16000-o2048-min_phalluc.png)
+
+
+### Paired comparisons (AUROC difference a - b, same rows)
+
+| detector | slice | a | b | n | diff | ci_lo | ci_hi | p_value |
+|---|---|---|---|---|---|---|---|---|
+| jev_choice | phantom_grid_sub | chunk-w16000-o2048-min_phalluc | jev_choice:truncate-w16000 | 3840 | 0.137 | 0.126 | 0.148 | 0.000 |
+| jev_choice | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2 | jev_choice:truncate-w16000 | 3840 | 0.098 | 0.087 | 0.110 | 0.000 |
+| jev_choice | phantom_grid_sub | chunk-w16000-o2048-min_phalluc | answer_tfidf:answer_tfidf | 3840 | 0.014 | -0.017 | 0.048 | 0.416 |
+| jev_choice | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2 | answer_tfidf:answer_tfidf | 3840 | -0.025 | -0.058 | 0.010 | 0.136 |
+| jev_choice | phantom_grid_sub | truncate-w16000 | answer_tfidf:answer_tfidf | 3840 | -0.122 | -0.153 | -0.089 | 0.000 |
+| jev_noul | phantom_grid_sub | chunk-w16000-o2048-min_phalluc | jev_noul:truncate-w16000 | 3840 | 0.129 | 0.119 | 0.139 | 0.000 |
+| jev_noul | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2 | jev_noul:truncate-w16000 | 3840 | 0.090 | 0.079 | 0.102 | 0.000 |
+| jev_noul | phantom_grid_sub | chunk-w16000-o2048-min_phalluc | answer_tfidf:answer_tfidf | 3840 | 0.015 | -0.017 | 0.048 | 0.400 |
+| jev_noul | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2 | answer_tfidf:answer_tfidf | 3840 | -0.024 | -0.058 | 0.009 | 0.152 |
+| jev_noul | phantom_grid_sub | truncate-w16000 | answer_tfidf:answer_tfidf | 3840 | -0.114 | -0.144 | -0.081 | 0.000 |
 
 ## Fine-tuning
 
@@ -51,7 +88,8 @@ _To be written once the GPU stages are complete. It must discuss each result aga
 - PHANTOM's long variants are built around a single 500-token evidence passage, so `min_phalluc` (any window supports the answer) suits it; claims needing evidence from several windows are not tested.
 - 512-token models (DeBERTa) cannot hold most seed passages in one window; their results are partial-evidence results.
 - `grid_sub` uses 200 pairs per filing per cell; CIs reflect this.
-- API judges change over time; the API results are a secondary comparison and are pinned to the model ids in the manifest.
+- API judges (Jev, Dartmouth Chat, Gemini) can change behind the same name; each run records the model id that answered, and Jev is pinned to `jev-1.13.0` rather than the moving `jev-latest` alias.
+- Jev results use a 60-pair-per-cell PHANTOM sample (cost); its CIs are wider than the encoders' 200-pair grid.
 
 ## Reproducibility
 
@@ -66,5 +104,6 @@ Pinned revisions:
 - `KRLabsOrg/lettucedect-base-modernbert-en-v1` @ `bbd77832f52f`
 - `Qwen/Qwen3-4B-Instruct-2507` @ `cdbee75f17c0`
 - `Qwen/Qwen3-8B` @ `b968826d9c46`
+- TypeSafe Jev API, model pinned to `jev-1.13.0` (served model ids are recorded in `artifacts/predictions/manifest/`); 8717 live requests, 63,468,498 input tokens, $2.67
 
 Run `python -m src.cli status` to see how each artifact is produced.

@@ -1,0 +1,29 @@
+{
+  "hash": "f6ec9d62817a",
+  "run": "jev_choice",
+  "slice": "halueval_val",
+  "strategy": "retrieve-w1500-o750-min_phalluc-k2",
+  "ablate": false,
+  "detector": {
+    "name": "jev_choice",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [],
+    "answer": "choice",
+    "session_input_tokens": 0,
+    "session_usd": 0.0,
+    "premises_shrunk": 5
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 1500,
+    "overlap": 750,
+    "top_k": 2
+  },
+  "rows": 600,
+  "limit": 300,
+  "elapsed_s": 1.4,
+  "git_commit": "7ad33b9",
+  "created": "2026-10-11T03:50:57"
+}

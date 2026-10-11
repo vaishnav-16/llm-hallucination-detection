@@ -1,0 +1,46 @@
+{
+  "model_requested": "jev-1.13.0",
+  "models": [
+    {
+      "name": "jev-latest",
+      "description": "The latest iteration of TypeSafe's System One Model: Jev",
+      "release_date": "2026-09-10T18:38:01.391457+00:00"
+    },
+    {
+      "name": "jev-preview",
+      "description": "A preview version of `jev-latest`: should be better in most ways",
+      "release_date": "2026-09-10T18:39:06.057655+00:00"
+    }
+  ],
+  "grouped_vs_alone_noul": [
+    {
+      "label": 0,
+      "grouped": 0.99,
+      "alone": 0.99
+    },
+    {
+      "label": 1,
+      "grouped": 0.43,
+      "alone": 0.46
+    }
+  ],
+  "grouped_input_tokens": 1904,
+  "alone_input_tokens": [
+    1327,
+    1567
+  ],
+  "long": {
+    "pieces": 20000,
+    "input_tokens": 14761,
+    "tokens_per_piece": 0.738,
+    "latency_s": 0.65
+  },
+  "models_served": [
+    "jev-1.13.0"
+  ],
+  "spend_after_probe": {
+    "input_tokens": 19559,
+    "usd": 0.000821,
+    "requests": 4
+  }
+}

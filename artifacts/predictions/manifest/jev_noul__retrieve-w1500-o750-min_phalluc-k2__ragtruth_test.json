@@ -1,0 +1,31 @@
+{
+  "hash": "c01bcff45ab7",
+  "run": "jev_noul",
+  "slice": "ragtruth_test",
+  "strategy": "retrieve-w1500-o750-min_phalluc-k2",
+  "ablate": false,
+  "detector": {
+    "name": "jev_noul",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [
+      "jev-1.13.0"
+    ],
+    "answer": "noul",
+    "session_input_tokens": 43860296,
+    "session_usd": 1.8421,
+    "premises_shrunk": 9
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 1500,
+    "overlap": 750,
+    "top_k": 2
+  },
+  "rows": 897,
+  "limit": 150,
+  "elapsed_s": 1.9,
+  "git_commit": "7ad33b9",
+  "created": "2026-10-11T03:44:12"
+}
