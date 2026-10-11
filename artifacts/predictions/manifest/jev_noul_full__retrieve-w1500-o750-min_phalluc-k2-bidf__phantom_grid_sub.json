@@ -1,0 +1,33 @@
+{
+  "hash": "14632179048b",
+  "run": "jev_noul_full",
+  "slice": "phantom_grid_sub",
+  "strategy": "retrieve-w1500-o750-min_phalluc-k2-bidf",
+  "ablate": false,
+  "detector": {
+    "name": "jev_noul",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [
+      "jev-1.13.0"
+    ],
+    "answer": "noul",
+    "questions": "v1",
+    "session_input_tokens": 3111197,
+    "session_usd": 0.1307,
+    "premises_shrunk": 0
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 1500,
+    "overlap": 750,
+    "top_k": 2,
+    "retriever": "bm25_blockidf"
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 238.7,
+  "git_commit": "ea0be66",
+  "created": "2026-10-11T13:08:10"
+}
