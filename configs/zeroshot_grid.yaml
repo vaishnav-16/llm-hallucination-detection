@@ -6,7 +6,7 @@
 name: zeroshot_grid
 runs:
   - name: hhem
-    detector: {type: hhem, max_length: 2560, batch_size: 8, precision: fp32}
+    detector: {type: hhem, max_length: 2560, batch_size: 8, precision: bf16}   # bf16 (not fp32): ~3x faster on the 4070; T5 was trained in bf16
     strategies:
       - {strategy: truncate, window: 2048}
       - {strategy: chunk, window: 2048, overlap: 1024}
@@ -39,7 +39,7 @@ runs:
 
   # Context ablation (shortcut control): same detectors with an empty context. Cheap.
   - name: hhem_ablate
-    detector: {type: hhem, max_length: 2560, batch_size: 32, precision: fp32}
+    detector: {type: hhem, max_length: 2560, batch_size: 32, precision: bf16}
     strategies: [{strategy: truncate, window: 2048}]
     ablate_context: true
     slices: [phantom_seed_test, phantom_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
