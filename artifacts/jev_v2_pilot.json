@@ -1,0 +1,49 @@
+{
+  "purpose": "Validation-only pilot: the v2 question set had to beat v1 on validation before any test slice was scored.",
+  "decision": "not adopted: no consistent gain (v2 stack vs v1 noul: HaluEval +0.013, PHANTOM +0.004, RAGTruth -0.012); test slices not run",
+  "v1": "questions v1, truncate-w16000 (validation documents fit in one window, so all v1 strategies send the same requests)",
+  "v2": "questions v2, retrieve-w1500-o750-min_phalluc-k2-bidf",
+  "stack": "logistic regression on logits, pooled validation slices weighted equally per dataset, 5-fold out-of-fold by pair_id",
+  "rows": {
+    "halueval_val": 600,
+    "phantom_val": 296,
+    "ragtruth_val": 605
+  },
+  "auroc": {
+    "halueval_val": {
+      "v1_noul": 0.9384,
+      "v1_choice": 0.9157,
+      "v2_support": 0.9245,
+      "v2_numbers": 0.8395,
+      "v2_entities": 0.9222,
+      "v2_extra": 0.9486,
+      "v2_choice2": 0.9191,
+      "v1_stack_oof": 0.9353,
+      "v2_stack_oof": 0.9508
+    },
+    "phantom_val": {
+      "v1_noul": 0.9915,
+      "v1_choice": 0.9896,
+      "v2_support": 0.9932,
+      "v2_numbers": 0.8591,
+      "v2_entities": 0.9641,
+      "v2_extra": 0.9952,
+      "v2_choice2": 0.9899,
+      "v1_stack_oof": 0.9915,
+      "v2_stack_oof": 0.9962
+    },
+    "ragtruth_val": {
+      "v1_noul": 0.9239,
+      "v1_choice": 0.9251,
+      "v2_support": 0.9152,
+      "v2_numbers": 0.8042,
+      "v2_entities": 0.8491,
+      "v2_extra": 0.9091,
+      "v2_choice2": 0.9196,
+      "v1_stack_oof": 0.9244,
+      "v2_stack_oof": 0.9117
+    }
+  },
+  "cost_usd": 0.111,
+  "date": "2026-10-11"
+}
