@@ -1,0 +1,25 @@
+{
+  "hash": "c809c3d4204f",
+  "run": "deberta_nli",
+  "slice": "halueval_test",
+  "strategy": "retrieve-w400-o128-min_phalluc-k3-bidf",
+  "ablate": false,
+  "detector": {
+    "name": "DeBERTa-v3-base-mnli-fever-anli",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 3
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 400,
+    "overlap": 128,
+    "top_k": 3,
+    "retriever": "bm25_blockidf"
+  },
+  "rows": 3000,
+  "limit": null,
+  "elapsed_s": 8.0,
+  "git_commit": "731d5e7",
+  "created": "2026-10-11T12:57:47"
+}
