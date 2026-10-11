@@ -118,7 +118,7 @@ class SequenceClassifierDetector(_HFDetector):
             model = str(ROOT / model)
         self.name = name or model.replace("\\", "/").rstrip("/").split("/")[-1]
         self.device, self.batch_size, self.max_length = device, batch_size, max_length
-        self.n_claims_truncated = 0
+        self.claims_truncated: set[str] = set()
         self.tokenizer = AutoTokenizer.from_pretrained(model, revision=revision)
         cfg = AutoConfig.from_pretrained(model, revision=revision)
         if extend_positions:
@@ -152,12 +152,12 @@ class SequenceClassifierDetector(_HFDetector):
     def _score_batch(self, pairs):
         torch = _torch()
         hyps = []
-        for _, h in pairs:
-            h, cut = fit_claim(self.tokenizer, h, self.max_length)
-            if cut:
-                self.n_claims_truncated += 1
-                logger.warning("%s: claim longer than the %d-token window, cut to fit (%d so far)",
-                               self.name, self.max_length, self.n_claims_truncated)
+        for _, claim in pairs:
+            h, cut = fit_claim(self.tokenizer, claim, self.max_length)
+            if cut and claim not in self.claims_truncated:  # a claim recurs in every window of its context
+                self.claims_truncated.add(claim)
+                logger.warning("%s: claim longer than the %d-token window, cut to fit (%d distinct so far)",
+                               self.name, self.max_length, len(self.claims_truncated))
             hyps.append(h)
         enc = self.tokenizer(
             [p for p, _ in pairs], hyps, return_tensors="pt", padding=True,
@@ -170,7 +170,7 @@ class SequenceClassifierDetector(_HFDetector):
         return probs[:, 1].cpu().numpy()
 
     def describe(self) -> dict:
-        return {**super().describe(), "claims_truncated": self.n_claims_truncated}
+        return {**super().describe(), "claims_truncated": len(self.claims_truncated)}
 
 
 LETTUCE_QA_PROMPT = (
