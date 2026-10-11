@@ -54,6 +54,19 @@ runs:
       - {name: halueval_test, max_pairs: 500}
       - {name: halueval_val, max_pairs: 300}
 
+  # v1 on the encoders' full 200-pair PHANTOM grid, with the cheapest strategy that matches chunk on the 60-pair
+  # sample (block-IDF retrieve: 0.968 vs chunk 0.969 AUROC). Same rows as the encoders and answer-only baselines,
+  # so paired comparisons get ~3x the pairs. The first 60 pairs are served from the cache; jev_choice_full is free.
+  - name: jev_noul_full
+    detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: &jev_full_strategies
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2, retriever: bm25_blockidf}
+    slices: [phantom_grid_sub]
+  - name: jev_choice_full
+    detector: {type: jev, answer: choice, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_full_strategies
+    slices: [phantom_grid_sub]
+
   # v2 question set (src/detectors/jev.py): atomic per-claim questions (support, numbers, entities, extra) plus the
   # Choice asked in both option orders, following TypeSafe's jev-1.13 guidance. All five runs send identical
   # requests, so only the first one is paid ($0.11 for the validation slices).
