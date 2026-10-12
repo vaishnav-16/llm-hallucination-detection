@@ -1,0 +1,26 @@
+{
+  "hash": "439cbca64798",
+  "run": "hhem",
+  "slice": "halueval_val",
+  "strategy": "retrieve-w2048-o1024-min_phalluc-k2-bidf",
+  "ablate": false,
+  "detector": {
+    "name": "hhem",
+    "requires": "gpu",
+    "max_length": 2560,
+    "premises_truncated": 555,
+    "attention": "t5_bias_sdpa"
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 2048,
+    "overlap": 1024,
+    "top_k": 2,
+    "retriever": "bm25_blockidf"
+  },
+  "rows": 3000,
+  "limit": null,
+  "elapsed_s": 11.6,
+  "git_commit": "8009213",
+  "created": "2026-10-11T23:28:01"
+}
