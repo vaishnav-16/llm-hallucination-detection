@@ -1,6 +1,6 @@
 # Length-robust hallucination detection on PHANTOM, RAGTruth and HaluEval
 
-_Generated 2026-10-11 by `python -m src.cli report` from the committed `artifacts/`._
+_Generated 2026-10-12 by `python -m src.cli report` from the committed `artifacts/`._
 
 **Pipeline status.** Done: prepare, baselines, score-smoke, probe-jev, judge-jev, finetune, evaluate. Pending: rewrite-halueval, probe-api, score-zeroshot, judges-api, score-finetuned, judge-local, report. Sections that depend on pending stages say so explicitly.
 
@@ -54,6 +54,9 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | jev_noul_ablate_full | truncate-w16000__ablate | nan | nan | nan | 0.742 [0.718, 0.765] | 0.688 [0.651, 0.728] | nan | nan | nan |
 | jev_noul_full | retrieve-w1500-o750-min_phalluc-k2-bidf | nan | nan | nan | 0.974 [0.966, 0.982] | 0.978 [0.962, 0.989] | nan | nan | nan |
 | lexical_support | full_context | 0.895 [0.881, 0.907] | 0.836 [0.819, 0.852] | 0.814 [0.796, 0.832] | nan | nan | nan | nan | 0.783 [0.764, 0.803] |
+| modernbert_nli | chunk-w1536-o1024-min_phalluc | 0.826 [0.814, 0.839] | nan | nan | 0.746 [0.723, 0.769] | 0.706 [0.682, 0.736] | nan | nan | 0.767 [0.749, 0.788] |
+| modernbert_nli | retrieve-w1536-o1024-min_phalluc-k2-bidf | 0.826 [0.814, 0.839] | nan | nan | 0.740 [0.716, 0.762] | 0.705 [0.680, 0.735] | nan | nan | 0.767 [0.749, 0.787] |
+| modernbert_nli | truncate-w1536 | 0.826 [0.814, 0.839] | nan | nan | 0.514 [0.503, 0.524] | 0.539 [0.530, 0.547] | nan | nan | 0.766 [0.748, 0.786] |
 
 
 ### phantom_grid_sub: AUROC vs context length (all pairs)
@@ -72,6 +75,8 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 ![position heatmap](../artifacts/figures/position_jev_choice_chunk-w16000-o2048-min_phalluc.png)
 
 ![position heatmap](../artifacts/figures/position_jev_noul_chunk-w16000-o2048-min_phalluc.png)
+
+![position heatmap](../artifacts/figures/position_modernbert_nli_chunk-w1536-o1024-min_phalluc.png)
 
 
 ### Paired comparisons (AUROC difference a - b, same rows)
@@ -105,6 +110,11 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | jev_noul | phantom_grid_sub | truncate-w16000 | answer_tfidf:answer_tfidf | 3840 | -0.114 | -0.144 | -0.081 | 0.000 |
 | jev_noul_ablate_full | phantom_grid_sub | truncate-w16000__ablate | answer_tfidf:answer_tfidf | 12800 | -0.213 | -0.236 | -0.188 | 0.000 |
 | jev_noul_full | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2-bidf | answer_tfidf:answer_tfidf | 12800 | 0.019 | 0.005 | 0.033 | 0.008 |
+| modernbert_nli | phantom_grid_sub | chunk-w1536-o1024-min_phalluc | modernbert_nli:truncate-w1536 | 12800 | 0.232 | 0.211 | 0.251 | 0.000 |
+| modernbert_nli | phantom_grid_sub | retrieve-w1536-o1024-min_phalluc-k2-bidf | modernbert_nli:truncate-w1536 | 12800 | 0.226 | 0.204 | 0.244 | 0.000 |
+| modernbert_nli | phantom_grid_sub | chunk-w1536-o1024-min_phalluc | answer_tfidf:answer_tfidf | 12800 | -0.209 | -0.234 | -0.184 | 0.000 |
+| modernbert_nli | phantom_grid_sub | retrieve-w1536-o1024-min_phalluc-k2-bidf | answer_tfidf:answer_tfidf | 12800 | -0.215 | -0.241 | -0.192 | 0.000 |
+| modernbert_nli | phantom_grid_sub | truncate-w1536 | answer_tfidf:answer_tfidf | 12800 | -0.441 | -0.458 | -0.425 | 0.000 |
 
 ## Fine-tuning
 
