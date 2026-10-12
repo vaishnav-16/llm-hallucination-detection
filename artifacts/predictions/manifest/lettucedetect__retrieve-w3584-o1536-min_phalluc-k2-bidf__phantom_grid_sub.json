@@ -1,0 +1,24 @@
+{
+  "hash": "67486c863a8e",
+  "run": "lettucedetect",
+  "slice": "phantom_grid_sub",
+  "strategy": "retrieve-w3584-o1536-min_phalluc-k2-bidf",
+  "ablate": false,
+  "detector": {
+    "name": "lettucedetect",
+    "requires": "gpu",
+    "max_length": 4096
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 3584,
+    "overlap": 1536,
+    "top_k": 2,
+    "retriever": "bm25_blockidf"
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 3192.8,
+  "git_commit": "53cac1b",
+  "created": "2026-10-12T09:39:20"
+}
