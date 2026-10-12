@@ -1,0 +1,24 @@
+{
+  "hash": "4d4e847abdfd",
+  "run": "hhem",
+  "slice": "ragtruth_val",
+  "strategy": "chunk-w2048-o1024-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "hhem",
+    "requires": "gpu",
+    "max_length": 2560,
+    "premises_truncated": 495,
+    "attention": "t5_bias_sdpa"
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 2048,
+    "overlap": 1024
+  },
+  "rows": 2244,
+  "limit": null,
+  "elapsed_s": 43.8,
+  "git_commit": "32a58a3",
+  "created": "2026-10-11T22:55:00"
+}
