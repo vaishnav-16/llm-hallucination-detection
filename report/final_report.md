@@ -2,7 +2,7 @@
 
 _Generated 2026-10-12 by `python -m src.cli report` from the committed `artifacts/`._
 
-**Pipeline status.** Done: prepare, baselines, score-smoke, probe-jev, judge-jev, finetune, evaluate. Pending: rewrite-halueval, probe-api, score-zeroshot, judges-api, score-finetuned, judge-local, report. Sections that depend on pending stages say so explicitly.
+**Pipeline status.** Done: prepare, baselines, score-smoke, score-zeroshot, probe-jev, judge-jev, finetune, evaluate. Pending: rewrite-halueval, probe-api, judges-api, score-finetuned, judge-local, report. Sections that depend on pending stages say so explicitly.
 
 ## Research question
 
@@ -41,6 +41,7 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | hhem | chunk-w2048-o1024-min_phalluc | 0.737 [0.723, 0.751] | nan | nan | 0.701 [0.675, 0.727] | 0.831 [0.796, 0.863] | nan | nan | 0.824 [0.806, 0.841] |
 | hhem | retrieve-w2048-o1024-min_phalluc-k2-bidf | 0.737 [0.723, 0.751] | nan | nan | 0.698 [0.672, 0.725] | 0.828 [0.793, 0.861] | nan | nan | 0.824 [0.806, 0.841] |
 | hhem | truncate-w2048 | 0.737 [0.723, 0.751] | nan | nan | 0.552 [0.542, 0.562] | 0.586 [0.574, 0.599] | nan | nan | 0.824 [0.806, 0.841] |
+| hhem_ablate | truncate-w2048__ablate | 0.319 [0.302, 0.334] | nan | nan | nan | nan | 0.384 [0.365, 0.405] | 0.502 [0.475, 0.529] | 0.395 [0.371, 0.420] |
 | jev_choice | chunk-w16000-o2048-min_phalluc | 0.920 [0.903, 0.935] | nan | nan | 0.969 [0.946, 0.986] | 0.966 [0.926, 0.992] | nan | nan | 0.925 [0.905, 0.945] |
 | jev_choice | retrieve-w1500-o750-min_phalluc-k2 | 0.920 [0.903, 0.935] | nan | nan | 0.930 [0.909, 0.948] | 0.937 [0.903, 0.963] | nan | nan | 0.928 [0.908, 0.946] |
 | jev_choice | retrieve-w1500-o750-min_phalluc-k2-bidf | 0.920 [0.903, 0.935] | nan | nan | 0.968 [0.947, 0.986] | 0.975 [0.941, 0.997] | nan | nan | 0.928 [0.908, 0.946] |
@@ -53,10 +54,14 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | jev_noul_ablate | truncate-w16000__ablate | 0.654 [0.624, 0.681] | nan | nan | nan | nan | 0.746 [0.720, 0.774] | 0.678 [0.636, 0.726] | 0.518 [0.504, 0.533] |
 | jev_noul_ablate_full | truncate-w16000__ablate | nan | nan | nan | 0.742 [0.718, 0.765] | 0.688 [0.651, 0.728] | nan | nan | nan |
 | jev_noul_full | retrieve-w1500-o750-min_phalluc-k2-bidf | nan | nan | nan | 0.974 [0.966, 0.982] | 0.978 [0.962, 0.989] | nan | nan | nan |
+| lettucedetect | chunk-w3584-o1536-min_phalluc | 0.823 [0.808, 0.837] | nan | nan | 0.733 [0.711, 0.755] | 0.809 [0.780, 0.839] | nan | nan | 0.883 [0.866, 0.898] |
+| lettucedetect | retrieve-w3584-o1536-min_phalluc-k2-bidf | 0.823 [0.808, 0.837] | nan | nan | 0.727 [0.704, 0.749] | 0.816 [0.786, 0.847] | nan | nan | 0.883 [0.866, 0.898] |
+| lettucedetect | truncate-w3584 | 0.823 [0.808, 0.837] | nan | nan | 0.641 [0.628, 0.655] | 0.649 [0.631, 0.668] | nan | nan | 0.883 [0.866, 0.898] |
 | lexical_support | full_context | 0.895 [0.881, 0.907] | 0.836 [0.819, 0.852] | 0.814 [0.796, 0.832] | nan | nan | nan | nan | 0.783 [0.764, 0.803] |
 | modernbert_nli | chunk-w1536-o1024-min_phalluc | 0.826 [0.814, 0.839] | nan | nan | 0.746 [0.723, 0.769] | 0.706 [0.682, 0.736] | nan | nan | 0.767 [0.749, 0.788] |
 | modernbert_nli | retrieve-w1536-o1024-min_phalluc-k2-bidf | 0.826 [0.814, 0.839] | nan | nan | 0.740 [0.716, 0.762] | 0.705 [0.680, 0.735] | nan | nan | 0.767 [0.749, 0.787] |
 | modernbert_nli | truncate-w1536 | 0.826 [0.814, 0.839] | nan | nan | 0.514 [0.503, 0.524] | 0.539 [0.530, 0.547] | nan | nan | 0.766 [0.748, 0.786] |
+| modernbert_nli_ablate | truncate-w1536__ablate | 0.256 [0.241, 0.271] | nan | nan | nan | nan | 0.244 [0.225, 0.262] | 0.465 [0.446, 0.483] | 0.578 [0.551, 0.604] |
 
 
 ### phantom_grid_sub: AUROC vs context length (all pairs)
@@ -75,6 +80,8 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 ![position heatmap](../artifacts/figures/position_jev_choice_chunk-w16000-o2048-min_phalluc.png)
 
 ![position heatmap](../artifacts/figures/position_jev_noul_chunk-w16000-o2048-min_phalluc.png)
+
+![position heatmap](../artifacts/figures/position_lettucedetect_chunk-w3584-o1536-min_phalluc.png)
 
 ![position heatmap](../artifacts/figures/position_modernbert_nli_chunk-w1536-o1024-min_phalluc.png)
 
@@ -110,6 +117,11 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | jev_noul | phantom_grid_sub | truncate-w16000 | answer_tfidf:answer_tfidf | 3840 | -0.114 | -0.144 | -0.081 | 0.000 |
 | jev_noul_ablate_full | phantom_grid_sub | truncate-w16000__ablate | answer_tfidf:answer_tfidf | 12800 | -0.213 | -0.236 | -0.188 | 0.000 |
 | jev_noul_full | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2-bidf | answer_tfidf:answer_tfidf | 12800 | 0.019 | 0.005 | 0.033 | 0.008 |
+| lettucedetect | phantom_grid_sub | chunk-w3584-o1536-min_phalluc | lettucedetect:truncate-w3584 | 12800 | 0.092 | 0.075 | 0.106 | 0.000 |
+| lettucedetect | phantom_grid_sub | retrieve-w3584-o1536-min_phalluc-k2-bidf | lettucedetect:truncate-w3584 | 12800 | 0.086 | 0.068 | 0.102 | 0.000 |
+| lettucedetect | phantom_grid_sub | chunk-w3584-o1536-min_phalluc | answer_tfidf:answer_tfidf | 12800 | -0.222 | -0.250 | -0.193 | 0.000 |
+| lettucedetect | phantom_grid_sub | retrieve-w3584-o1536-min_phalluc-k2-bidf | answer_tfidf:answer_tfidf | 12800 | -0.228 | -0.258 | -0.198 | 0.000 |
+| lettucedetect | phantom_grid_sub | truncate-w3584 | answer_tfidf:answer_tfidf | 12800 | -0.314 | -0.333 | -0.295 | 0.000 |
 | modernbert_nli | phantom_grid_sub | chunk-w1536-o1024-min_phalluc | modernbert_nli:truncate-w1536 | 12800 | 0.232 | 0.211 | 0.251 | 0.000 |
 | modernbert_nli | phantom_grid_sub | retrieve-w1536-o1024-min_phalluc-k2-bidf | modernbert_nli:truncate-w1536 | 12800 | 0.226 | 0.204 | 0.244 | 0.000 |
 | modernbert_nli | phantom_grid_sub | chunk-w1536-o1024-min_phalluc | answer_tfidf:answer_tfidf | 12800 | -0.209 | -0.234 | -0.184 | 0.000 |
