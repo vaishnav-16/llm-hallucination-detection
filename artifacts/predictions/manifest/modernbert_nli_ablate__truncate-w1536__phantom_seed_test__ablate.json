@@ -1,0 +1,22 @@
+{
+  "hash": "a9645edc342e",
+  "run": "modernbert_nli_ablate",
+  "slice": "phantom_seed_test",
+  "strategy": "truncate-w1536",
+  "ablate": true,
+  "detector": {
+    "name": "ModernBERT-base-nli",
+    "requires": "gpu",
+    "max_length": 2048,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 1536
+  },
+  "rows": 1982,
+  "limit": null,
+  "elapsed_s": 5.5,
+  "git_commit": "53cac1b",
+  "created": "2026-10-12T09:42:15"
+}

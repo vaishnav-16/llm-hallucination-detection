@@ -1,0 +1,23 @@
+{
+  "hash": "e9dd37a52a26",
+  "run": "hhem_ablate",
+  "slice": "phantom_seed_test",
+  "strategy": "truncate-w2048",
+  "ablate": true,
+  "detector": {
+    "name": "hhem",
+    "requires": "gpu",
+    "max_length": 2560,
+    "premises_truncated": 0,
+    "attention": "t5_bias_sdpa"
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 2048
+  },
+  "rows": 1982,
+  "limit": null,
+  "elapsed_s": 5.0,
+  "git_commit": "53cac1b",
+  "created": "2026-10-12T09:41:40"
+}

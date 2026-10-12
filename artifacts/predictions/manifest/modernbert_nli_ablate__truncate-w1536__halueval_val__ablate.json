@@ -1,0 +1,22 @@
+{
+  "hash": "df440879f3a0",
+  "run": "modernbert_nli_ablate",
+  "slice": "halueval_val",
+  "strategy": "truncate-w1536",
+  "ablate": true,
+  "detector": {
+    "name": "ModernBERT-base-nli",
+    "requires": "gpu",
+    "max_length": 2048,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 1536
+  },
+  "rows": 3000,
+  "limit": null,
+  "elapsed_s": 4.7,
+  "git_commit": "53cac1b",
+  "created": "2026-10-12T09:42:24"
+}
