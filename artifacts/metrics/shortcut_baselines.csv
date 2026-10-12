@@ -17,3 +17,9 @@ phantom_train,phantom_val,lexical_support,296,0.4797297297297297,0.8651159605551
 phantom_train,phantom_grid_full,answer_length,28906,0.810869715629973,0.8353699592016743
 phantom_train,phantom_grid_full,answer_tfidf,28906,0.8065799487995572,0.9573157749857725
 phantom_train,phantom_grid_full,lexical_support,28906,0.47478032242441015,0.8363827161603162
+halueval_norm_train,halueval_norm_val,answer_length,2948,0.5902306648575305,0.6301441172084563
+halueval_norm_train,halueval_norm_val,answer_tfidf,2948,0.6478968792401628,0.7157433966224139
+halueval_norm_train,halueval_norm_val,lexical_support,2948,0.5800542740841248,0.6573080845924565
+halueval_norm_train,halueval_norm_test,answer_length,2956,0.5953991880920162,0.6429854830706015
+halueval_norm_train,halueval_norm_test,answer_tfidf,2956,0.6512178619756428,0.7026991271165182
+halueval_norm_train,halueval_norm_test,lexical_support,2956,0.5794993234100135,0.6717970925857091

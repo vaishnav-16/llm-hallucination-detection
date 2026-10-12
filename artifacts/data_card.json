@@ -1,5 +1,5 @@
 {
-  "created": "2026-10-10",
+  "created": "2026-10-12",
   "slices": {
     "halueval": {
       "rows": 20000,
@@ -11,6 +11,17 @@
       "resp_period_faithful": 0.0124,
       "resp_words_halluc": 10.9865,
       "resp_period_halluc": 0.9513
+    },
+    "halueval_normalized": {
+      "rows": 9840,
+      "pairs": 4920,
+      "hallucinated": 4920,
+      "ctx_chars_mean": 346.09085365853656,
+      "ctx_chars_p95": 600.0,
+      "resp_words_faithful": 16.63150406504065,
+      "resp_period_faithful": 0.9975609756097561,
+      "resp_words_halluc": 13.771747967479675,
+      "resp_period_halluc": 0.9983739837398374
     },
     "ragtruth_train": {
       "rows": 14942,
