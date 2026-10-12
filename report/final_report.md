@@ -38,6 +38,9 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | deberta_nli | chunk-w400-o128-min_phalluc | 0.799 [0.784, 0.813] | nan | nan | 0.600 [0.584, 0.614] | 0.553 [0.535, 0.572] | nan | nan | 0.592 [0.568, 0.615] |
 | deberta_nli | retrieve-w400-o128-min_phalluc-k3-bidf | 0.799 [0.784, 0.813] | nan | nan | 0.698 [0.677, 0.717] | 0.654 [0.625, 0.682] | nan | nan | 0.596 [0.573, 0.619] |
 | deberta_nli | truncate-w400 | 0.799 [0.784, 0.813] | nan | nan | 0.535 [0.523, 0.547] | 0.525 [0.510, 0.543] | nan | nan | 0.597 [0.574, 0.621] |
+| hhem | chunk-w2048-o1024-min_phalluc | 0.737 [0.723, 0.751] | nan | nan | 0.701 [0.675, 0.727] | 0.831 [0.796, 0.863] | nan | nan | 0.824 [0.806, 0.841] |
+| hhem | retrieve-w2048-o1024-min_phalluc-k2-bidf | 0.737 [0.723, 0.751] | nan | nan | 0.698 [0.672, 0.725] | 0.828 [0.793, 0.861] | nan | nan | 0.824 [0.806, 0.841] |
+| hhem | truncate-w2048 | 0.737 [0.723, 0.751] | nan | nan | 0.552 [0.542, 0.562] | 0.586 [0.574, 0.599] | nan | nan | 0.824 [0.806, 0.841] |
 | jev_choice | chunk-w16000-o2048-min_phalluc | 0.920 [0.903, 0.935] | nan | nan | 0.969 [0.946, 0.986] | 0.966 [0.926, 0.992] | nan | nan | 0.925 [0.905, 0.945] |
 | jev_choice | retrieve-w1500-o750-min_phalluc-k2 | 0.920 [0.903, 0.935] | nan | nan | 0.930 [0.909, 0.948] | 0.937 [0.903, 0.963] | nan | nan | 0.928 [0.908, 0.946] |
 | jev_choice | retrieve-w1500-o750-min_phalluc-k2-bidf | 0.920 [0.903, 0.935] | nan | nan | 0.968 [0.947, 0.986] | 0.975 [0.941, 0.997] | nan | nan | 0.928 [0.908, 0.946] |
@@ -64,6 +67,8 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 
 ![position heatmap](../artifacts/figures/position_deberta_nli_chunk-w400-o128-min_phalluc.png)
 
+![position heatmap](../artifacts/figures/position_hhem_chunk-w2048-o1024-min_phalluc.png)
+
 ![position heatmap](../artifacts/figures/position_jev_choice_chunk-w16000-o2048-min_phalluc.png)
 
 ![position heatmap](../artifacts/figures/position_jev_noul_chunk-w16000-o2048-min_phalluc.png)
@@ -78,6 +83,11 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | deberta_nli | phantom_grid_sub | chunk-w400-o128-min_phalluc | answer_tfidf:answer_tfidf | 12800 | -0.356 | -0.374 | -0.339 | 0.000 |
 | deberta_nli | phantom_grid_sub | retrieve-w400-o128-min_phalluc-k3-bidf | answer_tfidf:answer_tfidf | 12800 | -0.257 | -0.280 | -0.235 | 0.000 |
 | deberta_nli | phantom_grid_sub | truncate-w400 | answer_tfidf:answer_tfidf | 12800 | -0.420 | -0.435 | -0.404 | 0.000 |
+| hhem | phantom_grid_sub | chunk-w2048-o1024-min_phalluc | hhem:truncate-w2048 | 12800 | 0.148 | 0.127 | 0.167 | 0.000 |
+| hhem | phantom_grid_sub | retrieve-w2048-o1024-min_phalluc-k2-bidf | hhem:truncate-w2048 | 12800 | 0.146 | 0.125 | 0.165 | 0.000 |
+| hhem | phantom_grid_sub | chunk-w2048-o1024-min_phalluc | answer_tfidf:answer_tfidf | 12800 | -0.254 | -0.285 | -0.226 | 0.000 |
+| hhem | phantom_grid_sub | retrieve-w2048-o1024-min_phalluc-k2-bidf | answer_tfidf:answer_tfidf | 12800 | -0.257 | -0.287 | -0.228 | 0.000 |
+| hhem | phantom_grid_sub | truncate-w2048 | answer_tfidf:answer_tfidf | 12800 | -0.403 | -0.419 | -0.387 | 0.000 |
 | jev_choice | phantom_grid_sub | chunk-w16000-o2048-min_phalluc | jev_choice:truncate-w16000 | 3840 | 0.136 | 0.126 | 0.147 | 0.000 |
 | jev_choice | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2-bidf | jev_choice:truncate-w16000 | 3840 | 0.136 | 0.124 | 0.148 | 0.000 |
 | jev_choice | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2 | jev_choice:truncate-w16000 | 3840 | 0.098 | 0.086 | 0.110 | 0.000 |
