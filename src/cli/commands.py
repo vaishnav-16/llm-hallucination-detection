@@ -57,7 +57,8 @@ def cmd_baselines(args: argparse.Namespace) -> None:
 def cmd_rewrite(args: argparse.Namespace) -> None:
     from src.data.normalize_answers import rewrite_halueval
 
-    rewrite_halueval(provider=args.provider, limit=args.limit)
+    rewrite_halueval(provider=args.provider, limit=args.limit, workers=args.workers, out_path=args.out,
+                     model=args.model, max_new=args.max_new)
 
 
 def cmd_probe(args: argparse.Namespace) -> None:
@@ -127,8 +128,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("baselines", help="shortcut baselines").set_defaults(func=cmd_baselines)
 
     s = sub.add_parser("rewrite-halueval", help="label-blind HaluEval answer rewrite")
-    s.add_argument("--provider", default="dartmouth")
+    s.add_argument("--provider", default="dartmouth", help="dartmouth | gemini | claude_cli (headless `claude -p`)")
     s.add_argument("--limit", type=int, default=None, help="only rewrite the first N pairs (testing)")
+    s.add_argument("--workers", type=int, default=4, help="parallel `claude -p` processes (claude_cli only)")
+    s.add_argument("--out", default=None, help="scratch jsonl instead of artifacts/rewrites/ (model comparisons)")
+    s.add_argument("--model", default=None, help="override the pinned model (use with --out)")
+    s.add_argument("--max-new", type=int, default=None, help="stop after N new answers (chunked runs)")
     s.set_defaults(func=cmd_rewrite)
 
     s = sub.add_parser("probe-api", help="probe configured API providers")

@@ -212,7 +212,8 @@ def probe_providers(providers: list[str] | None = None) -> dict:
     from src.data.store import write_json
 
     results = {}
-    for name in providers or list(load_providers()):
+    # claude_cli has no HTTP endpoint to probe (rewrite only), so only base_url providers are listed by default.
+    for name in providers or [k for k, v in load_providers().items() if v.get("base_url")]:
         res: dict = {"provider": name}
         try:
             client = ApiClient(name)

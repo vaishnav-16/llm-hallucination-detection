@@ -116,6 +116,22 @@ Jev doesn't depend on the training, so it can run before, during or after the GP
    (prefer a dated id), then run `probe-api` again to check logprobs and long-context support.
 3. `python -m src.cli rewrite-halueval --provider dartmouth` builds the normalized HaluEval variant (~10K calls).
    Then rerun `python -m src.cli baselines`: the answer-only baseline on `halueval_norm_test` should fall close to 0.5.
+
+   **Without an API key** the rewrite runs through headless Claude Code on a logged-in Claude subscription
+   (any machine where `echo "Reply OK" | claude -p --model haiku --tools ""` answers; don't use `--bare`, it needs an API key):
+   ```powershell
+   python -m src.cli rewrite-halueval --provider claude_cli --workers 4            # ~10K calls, ~1.7 s/answer at 4 workers
+   python -m src.cli rewrite-halueval --provider claude_cli --max-new 1000         # or in chunks; rerun to resume
+   ```
+   Each answer is one `claude -p` process (`--tools "" --strict-mcp-config --no-session-persistence`, fixed system prompt,
+   prompt on stdin, run from an empty temp dir so no CLAUDE.md is loaded). The model is pinned in `configs/providers.yaml`
+   (`claude_cli.model: claude-haiku-5-5`); a response from any other model raises. Failures (non-zero exit, timeout, empty
+   output, rate-limit message) are retried with backoff, then the run stops; nothing falls back to another model/provider.
+   Model choice: on the same 50 pairs (100 answers), Haiku 5.5 passed the meaning check on 98/100 and Sonnet 5.5 on 99/100;
+   neither hedged, and each added a fact or inference to 4-5 rewrites (Haiku once left meta-text in a rewrite). Sonnet
+   was not clearly better, so Haiku. **`claude -p` has no temperature control: the rewrites are reproducible only from the
+   committed `artifacts/rewrites/halueval_rewrites.jsonl`**, not by rerunning the command. Haiku is the rewriter, so it must
+   never be used as a judge on HaluEval.
 4. `python -m src.cli score --config configs/judges_api.yaml`.
 
 ## Troubleshooting

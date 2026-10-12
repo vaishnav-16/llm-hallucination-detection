@@ -19,3 +19,12 @@ gemini:
   samples: 5
   requests_per_minute: 10
   max_context_tokens: null
+
+# Headless Claude Code (`claude -p`) on the logged-in Claude subscription; no API key. HaluEval rewrite only
+# (`rewrite-halueval --provider claude_cli`), never a judge on HaluEval. One subprocess per answer, no tools,
+# no MCP, no saved session. No temperature control: the committed jsonl is the only exact record.
+claude_cli:
+  model: claude-haiku-5-5                         # chosen over claude-sonnet-5-5 on a 50-pair comparison (see HANDOFF.md)
+  timeout_s: 180                                  # per subprocess
+  max_retries: 5                                  # exponential backoff from backoff_s, then the run raises
+  backoff_s: 15
