@@ -75,6 +75,7 @@ def _binary_head_from_nli(model, nli_labels: dict[int, str]) -> None:
 
 
 def load_model_for_training(base: str, extend_positions: int | None = None):
+    import torch
     from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 
     revision = None
@@ -86,7 +87,9 @@ def load_model_for_training(base: str, extend_positions: int | None = None):
             raise ValueError("extend_positions is only supported for ModernBERT (RoPE)")
         cfg.max_position_embeddings = extend_positions
     tok = AutoTokenizer.from_pretrained(base, revision=revision)
-    model = AutoModelForSequenceClassification.from_pretrained(base, revision=revision, config=cfg)
+    # fp32 master weights: transformers 5 loads the stored dtype, and the DeBERTa NLI checkpoint is stored in fp16.
+    # Optimiser steps on fp16 weights collapsed that fine-tune to a constant output. bf16 autocast still runs the math.
+    model = AutoModelForSequenceClassification.from_pretrained(base, revision=revision, config=cfg, dtype=torch.float32)
     labels = {int(k): str(v).lower() for k, v in model.config.id2label.items()}
     if model.config.num_labels == 3 and any("entail" in v for v in labels.values()):
         _binary_head_from_nli(model, labels)

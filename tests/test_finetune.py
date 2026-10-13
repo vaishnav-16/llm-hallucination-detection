@@ -41,3 +41,20 @@ def test_finished_seeds_are_skipped_unless_forced(tmp_path, monkeypatch):
     calls.clear()
     ft.finetune_from_config(str(cfg), models_dir=models, force=True)
     assert [c[0] for c in calls] == [42, 43]
+
+
+def test_fp16_checkpoint_trains_with_fp32_weights(tmp_path, monkeypatch):
+    # MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli is stored in fp16 and transformers 5 loads the stored dtype.
+    # Optimiser updates on fp16 weights blew them up and collapsed the first DeBERTa fine-tune to constant output.
+    import torch
+    import transformers
+    from transformers import DebertaV2Config, DebertaV2ForSequenceClassification
+
+    cfg = DebertaV2Config(vocab_size=64, hidden_size=16, num_hidden_layers=1, num_attention_heads=2, intermediate_size=32,
+                          num_labels=3, id2label={0: "entailment", 1: "neutral", 2: "contradiction"})
+    DebertaV2ForSequenceClassification(cfg).half().save_pretrained(tmp_path / "nli")
+    monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", lambda *a, **k: None)
+
+    _, model, _ = ft.load_model_for_training(str(tmp_path / "nli"))
+    assert {p.dtype for p in model.parameters()} == {torch.float32}
+    assert model.config.num_labels == 2
