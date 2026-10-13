@@ -1,0 +1,22 @@
+{
+  "hash": "1e9a1c8fa5f6",
+  "run": "deberta_ft_s42",
+  "slice": "ragtruth_val",
+  "strategy": "truncate-w400",
+  "ablate": false,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 4
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 400
+  },
+  "rows": 2244,
+  "limit": null,
+  "elapsed_s": 33.9,
+  "git_commit": "a6eb40b",
+  "created": "2026-10-12T22:35:20"
+}
