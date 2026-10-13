@@ -43,6 +43,18 @@ def test_finished_seeds_are_skipped_unless_forced(tmp_path, monkeypatch):
     assert [c[0] for c in calls] == [42, 43]
 
 
+def test_val_auroc_guard_rejects_chance_and_nan():
+    import pytest
+
+    history = [{"eval_auroc": 0.46}, {"loss": 1.0}, {"eval_auroc": 0.5}]
+    for best in ({"eval_auroc": 0.5}, {"eval_auroc": float("nan")}, {}):
+        with pytest.raises(ft.TrainingError, match=r"\[0.46, 0.5\]"):
+            ft.check_val_auroc(best, "m seed 42", history=history)
+    ft.check_val_auroc({"eval_auroc": 0.91}, "m seed 42")
+    with pytest.raises(ft.TrainingError):
+        ft.check_val_auroc({"eval_auroc": 0.91}, "m seed 42", floor=0.95)
+
+
 def test_fp16_checkpoint_trains_with_fp32_weights(tmp_path, monkeypatch):
     # MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli is stored in fp16 and transformers 5 loads the stored dtype.
     # Optimiser updates on fp16 weights blew them up and collapsed the first DeBERTa fine-tune to constant output.

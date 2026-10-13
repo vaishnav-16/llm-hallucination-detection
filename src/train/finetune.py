@@ -38,6 +38,24 @@ from src.verify.slices import get_slice
 logger = logging.getLogger(__name__)
 
 SCRATCH_MODELS_DIR = RESULTS_DIR / "scratch_models"  # step-capped runs; git-ignored, never scored or uploaded
+MIN_VAL_AUROC = 0.6  # default floor; the NLI-initialised head already starts well above chance
+
+
+class TrainingError(RuntimeError):
+    """A fine-tune finished but its best validation AUROC is at chance (a collapsed or broken model)."""
+
+
+def check_val_auroc(best: dict, label: str, floor: float = MIN_VAL_AUROC, history: list[dict] | None = None) -> None:
+    """Raise if the selected checkpoint's validation AUROC is missing, NaN or at most ``floor``.
+
+    The first DeBERTa fine-tune collapsed to a constant output (val AUROC 0.5) and was still saved, uploaded
+    and scored. A run that fails this check is not saved under ``models/``, so it can't be scored or uploaded.
+    """
+    auc = best.get("eval_auroc")
+    if auc is None or not auc > floor:  # `not >` also catches NaN
+        curve = [round(h["eval_auroc"], 4) for h in history or [] if "eval_auroc" in h]
+        raise TrainingError(f"{label}: best val AUROC {auc} is not above {floor} (per-eval curve {curve}); "
+                            "model not saved. Checkpoints are left in the run's checkpoints/ folder for inspection.")
 
 
 def _load_slices(names: list[str], max_rows: int | None = None) -> pd.DataFrame:
@@ -210,6 +228,8 @@ def finetune(cfg: dict, seed: int, device: str = "auto", max_steps: int | None =
     t0 = time.time()
     trainer.train()
     best = trainer.evaluate()
+    if not max_steps:  # a 20-step memory check isn't expected to learn anything
+        check_val_auroc(best, f"{name} seed {seed}", float(cfg.get("min_val_auroc", MIN_VAL_AUROC)), trainer.state.log_history)
     trainer.save_model(str(out_dir))
     tok.save_pretrained(str(out_dir))
     meta = {
