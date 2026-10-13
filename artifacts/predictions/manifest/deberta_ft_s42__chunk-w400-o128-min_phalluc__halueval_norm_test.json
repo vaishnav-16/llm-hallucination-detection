@@ -1,0 +1,23 @@
+{
+  "hash": "7d1f44b7055d",
+  "run": "deberta_ft_s42",
+  "slice": "halueval_norm_test",
+  "strategy": "chunk-w400-o128-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 4
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 400,
+    "overlap": 128
+  },
+  "rows": 2956,
+  "limit": null,
+  "elapsed_s": 8.9,
+  "git_commit": "98ca680",
+  "created": "2026-10-13T01:25:54"
+}
