@@ -1,0 +1,22 @@
+{
+  "hash": "04be8d00779a",
+  "run": "deberta_ft_s42",
+  "slice": "phantom_grid_sub",
+  "strategy": "truncate-w400",
+  "ablate": false,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 3
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 400
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 684.1,
+  "git_commit": "75a35ee",
+  "created": "2026-10-12T22:33:44"
+}
