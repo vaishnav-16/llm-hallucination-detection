@@ -1,0 +1,22 @@
+{
+  "hash": "df21bf0d5534",
+  "run": "deberta_ft_s42",
+  "slice": "halueval_norm_test",
+  "strategy": "truncate-w400",
+  "ablate": false,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 3
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 400
+  },
+  "rows": 2956,
+  "limit": null,
+  "elapsed_s": 9.3,
+  "git_commit": "30ea732",
+  "created": "2026-10-14T01:51:08"
+}
