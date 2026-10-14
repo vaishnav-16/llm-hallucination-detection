@@ -1,0 +1,22 @@
+{
+  "hash": "80371b53ed15",
+  "run": "modernbert_ft_s42_ablate",
+  "slice": "halueval_norm_test",
+  "strategy": "truncate-w7168",
+  "ablate": true,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 7168
+  },
+  "rows": 2956,
+  "limit": null,
+  "elapsed_s": 5.0,
+  "git_commit": "7eb9c20",
+  "created": "2026-10-14T00:51:39"
+}
