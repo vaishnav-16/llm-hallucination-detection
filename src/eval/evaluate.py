@@ -6,6 +6,10 @@ For each (detector, strategy) and each test slice:
 - metrics are computed for the whole slice and for groups: context length (pooled), each PHANTOM cell,
   evidence position, the length-matched hard subset (faithful answer >= 224 chars), seed-identical
   ("original") rows only, and RAGTruth task type.
+- ``evid>=W`` groups (PHANTOM long cells): rows whose seed passage first appears after W words, from
+  ``artifacts/phantom_evidence_offsets.csv`` (``scripts/phantom_evidence_offsets.py``). W runs over every truncate
+  window in the predictions. For ``truncate-wW`` the evidence is provably outside the window, so a high AUROC there
+  comes from the answer and the filler, not the evidence. Every detector and baseline is scored on the same rows.
 - 95% CIs come from a pair-clustered bootstrap.
 
 Paired comparisons (same rows, aligned by example_id): each chunking strategy vs ``truncate`` for the same
@@ -35,6 +39,8 @@ VAL_FOR = {
     "halueval_test": "halueval_val", "halueval_norm_test": "halueval_norm_val", "ragtruth_test": "ragtruth_val",
 }
 CI_METRICS = ["auroc", "f1", "balanced_accuracy"]
+EVIDENCE_OFFSETS = ARTIFACTS_DIR / "phantom_evidence_offsets.csv"
+OFFSET_KEYS = ["pair_id", "filing", "target_tokens", "position"]
 
 
 def load_predictions(pred_dir=ARTIFACTS_DIR / "predictions") -> pd.DataFrame:
@@ -46,7 +52,24 @@ def load_predictions(pred_dir=ARTIFACTS_DIR / "predictions") -> pd.DataFrame:
     return df
 
 
-def _groups(df: pd.DataFrame, slice_name: str) -> list[tuple[str, pd.Series]]:
+def truncate_windows(strategies) -> list[int]:
+    """Every W in ``truncate-wW`` strategy tags (ablated runs included), sorted."""
+    return sorted({int(m) for m in pd.Series(list(strategies), dtype=str).str.extract(r"^truncate-w(\d+)")[0].dropna()})
+
+
+def add_evidence_offsets(preds: pd.DataFrame, path=EVIDENCE_OFFSETS) -> pd.DataFrame:
+    """Attach ``first_word`` (words before the seed passage, -1 if not located) to PHANTOM long-cell rows."""
+    if not path.exists():
+        logger.warning("%s not found: evid>=W groups skipped (run scripts/phantom_evidence_offsets.py)", path)
+        return preds
+    off = read_table(path)[OFFSET_KEYS + ["first_word"]]
+    out = preds.merge(off, on=OFFSET_KEYS, how="left", validate="many_to_one")
+    if len(out) != len(preds):
+        raise RuntimeError("evidence offsets join changed the number of prediction rows")
+    return out
+
+
+def _groups(df: pd.DataFrame, slice_name: str, windows: list[int] = ()) -> list[tuple[str, pd.Series]]:
     out = [("all", pd.Series(True, index=df.index))]
     if slice_name.startswith("phantom"):
         for n in sorted(df["target_tokens"].unique()):
@@ -57,6 +80,11 @@ def _groups(df: pd.DataFrame, slice_name: str) -> list[tuple[str, pd.Series]]:
         for pos in ("beginning", "middle", "end"):
             out.append((f"pos={pos}", df["position"] == pos))
         out.append(("hard", df["faithful_chars"] >= HARD_FAITHFUL_CHARS))
+        if "first_word" in df:
+            for w in windows:
+                m = df["first_word"].fillna(-1) >= w
+                out.append((f"evid>={w}", m))
+                out.append((f"evid>={w}|hard", m & (df["faithful_chars"] >= HARD_FAITHFUL_CHARS)))
         for f in sorted(df["filing"].unique()):
             out.append((f"filing={f}", df["filing"] == f))
         if df["position"].nunique() > 1:
@@ -69,7 +97,8 @@ def _groups(df: pd.DataFrame, slice_name: str) -> list[tuple[str, pd.Series]]:
 
 
 def evaluate_all(n_boot: int = 1000, n_boot_cells: int = 200, pred_dir=ARTIFACTS_DIR / "predictions", out_dir=METRICS_DIR) -> pd.DataFrame:
-    preds = load_predictions(pred_dir)
+    preds = add_evidence_offsets(load_predictions(pred_dir))
+    windows = truncate_windows(preds["strategy"].unique())
     rows = []
     for (det, strat), d in preds.groupby(["detector", "strategy"]):
         for sl, test in d.groupby("slice"):
@@ -81,7 +110,7 @@ def evaluate_all(n_boot: int = 1000, n_boot_cells: int = 200, pred_dir=ARTIFACTS
             else:
                 thr, src = 0.5, "default"
             test = test.reset_index(drop=True)
-            for g, mask in _groups(test, sl):
+            for g, mask in _groups(test, sl, windows):
                 sub = test[mask.to_numpy()]
                 if len(sub) < 20 or sub["label"].nunique() < 2:
                     continue

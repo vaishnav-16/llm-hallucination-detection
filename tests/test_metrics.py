@@ -87,3 +87,23 @@ def test_seed_summary_pools_seed_runs():
     out = seed_summary(pd.DataFrame(rows))
     assert len(out) == 1 and out.iloc[0]["n_seeds"] == 3
     assert out.iloc[0]["mean"] == pytest.approx(0.82) and out.iloc[0]["sd"] == pytest.approx(0.02)
+
+
+def test_evidence_offset_groups(tmp_path):
+    import pandas as pd
+
+    from src.eval.evaluate import _groups, add_evidence_offsets, truncate_windows
+
+    assert truncate_windows(["truncate-w400", "truncate-w7168__ablate", "chunk-w400-o128-min_phalluc", "none"]) == [400, 7168]
+    keys = {"filing": "10k", "target_tokens": 30000, "position": "end"}
+    off = pd.DataFrame([{"pair_id": p, **keys, "first_word": w} for p, w in [("a", 9000), ("b", 300), ("c", -1)]])
+    off.to_csv(tmp_path / "off.csv", index=False)
+    preds = pd.DataFrame([{"pair_id": p, **keys, "label": lab, "faithful_chars": 300, "variant": "original"}
+                          for p in ("a", "b", "c") for lab in (0, 1)])
+    preds = pd.concat([preds, pd.DataFrame([{"pair_id": "r", "filing": None, "target_tokens": None, "position": None, "label": 1}])],
+                      ignore_index=True)
+    out = add_evidence_offsets(preds, tmp_path / "off.csv")
+    assert len(out) == len(preds) and out["first_word"].isna().sum() == 1
+    groups = dict(_groups(out.iloc[:6], "phantom_grid_sub", [400]))
+    assert out.iloc[:6][groups["evid>=400"].to_numpy()]["pair_id"].unique().tolist() == ["a"]
+    assert groups["evid>=400|hard"].sum() == 2
