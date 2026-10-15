@@ -1,0 +1,21 @@
+# Answer-only control: the modernbert-nli-ft recipe with every context blanked (question + answer only).
+# It sets the line a fine-tuned detector has to beat to show it checks evidence, since fine-tuning can learn
+# answer-side cues that answer TF-IDF and the hard subset don't capture. No distractor augmentation (no context to pad),
+# and inputs are short, so it trains in minutes. Scored by the modernbert_answeronly_s42 run in finetuned_grid.yaml.
+# Run on the RTX 4070:  python -m src.cli finetune --config configs/finetune_modernbert_answeronly.yaml --device cuda
+name: modernbert-answeronly-ft
+base_model: modernbert_nli
+extend_positions: 8192
+max_length: 4096
+hypothesis: qa
+ablate_context: true
+train_slices: [ragtruth_train, phantom_train, halueval_norm_train]
+val_slices: [ragtruth_val, phantom_val, halueval_norm_val]
+oversample: {phantom: 3}
+epochs: 2
+batch_size: 2
+eval_batch_size: 4
+grad_accum: 8
+learning_rate: 3.0e-5
+warmup_ratio: 0.1
+seeds: [42]

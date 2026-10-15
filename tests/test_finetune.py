@@ -43,6 +43,19 @@ def test_finished_seeds_are_skipped_unless_forced(tmp_path, monkeypatch):
     assert [c[0] for c in calls] == [42, 43]
 
 
+def test_ablate_context_blanks_contexts_and_refuses_augmentation():
+    import pandas as pd
+    import pytest
+
+    df = pd.DataFrame({"context": ["evidence"], "question": ["q"], "response": ["a"]})
+    train, val = ft.ablate_contexts({"name": "m", "ablate_context": True}, df, df)
+    assert train["context"].tolist() == [""] and val["context"].tolist() == [""]
+    assert df["context"].tolist() == ["evidence"]  # inputs untouched
+    assert ft.ablate_contexts({"name": "m"}, df)[0] is df
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        ft.ablate_contexts({"name": "m", "ablate_context": True, "augment": {"fraction": 0.5}}, df)
+
+
 def test_val_auroc_guard_rejects_chance_and_nan():
     import pytest
 

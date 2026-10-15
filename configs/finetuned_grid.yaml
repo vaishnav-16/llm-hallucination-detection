@@ -39,3 +39,15 @@ runs:
       - {strategy: truncate, window: 400}
       - {strategy: chunk, window: 400, overlap: 128}
     slices: [phantom_grid_sub, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_answeronly_s42  # answer-only fine-tuned control (configs/finetune_modernbert_answeronly.yaml)
+    detector: {type: seqcls, model: models/modernbert-answeronly-ft/seed42, output: binary, max_length: 8192, batch_size: 16}
+    strategies: [{strategy: truncate, window: 7168}]
+    ablate_context: true
+    slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: deberta_ft_s42_ablate    # shortcut control for DeBERTa, same slices as modernbert_ft_s42_ablate
+    detector: {type: seqcls, model: models/deberta-nli-ft/seed42, output: binary, max_length: 512, batch_size: 32}
+    strategies: [{strategy: truncate, window: 400}]
+    ablate_context: true
+    slices: [phantom_seed_test, phantom_val, halueval_norm_test, ragtruth_test, ragtruth_val]

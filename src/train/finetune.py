@@ -117,6 +117,19 @@ def load_model_for_training(base: str, extend_positions: int | None = None):
     return tok, model, {"repo_id": base, "revision": revision}
 
 
+def ablate_contexts(cfg: dict, *frames: pd.DataFrame) -> list[pd.DataFrame]:
+    """Answer-only control (``ablate_context: true``): blank every context so the model sees only question + answer.
+
+    This is the same input an ``ablate_context`` score run gives a detector, so the control is scored the same way.
+    It measures how far a fine-tuned encoder gets on answer-side cues alone, a stronger line than answer TF-IDF.
+    """
+    if not cfg.get("ablate_context"):
+        return list(frames)
+    if cfg.get("augment", {}).get("fraction", 0) > 0:
+        raise ValueError(f"{cfg['name']}: ablate_context and distractor augmentation are mutually exclusive")
+    return [f.assign(context="") for f in frames]
+
+
 class _PairDataset:
     def __init__(self, df: pd.DataFrame, tok, max_length: int, hyp_fmt: str):
         hyps, n_cut = [], 0
@@ -186,6 +199,7 @@ def finetune(cfg: dict, seed: int, device: str = "auto", max_steps: int | None =
     if aug.get("fraction", 0) > 0:
         train = add_distractors(train, aug["fraction"], tuple(aug.get("target_tokens", (2000, 3500))), seed)
     val = _load_slices(cfg["val_slices"], cfg.get("max_val_rows"))
+    train, val = ablate_contexts(cfg, train, val)
     if (train["split"] != "train").any() or (val["split"] != "val").any():
         raise RuntimeError("finetune: train/val slices must contain only train/val rows")
     logger.info("train rows %d (%s), val rows %d", len(train), train["dataset"].value_counts().to_dict(), len(val))

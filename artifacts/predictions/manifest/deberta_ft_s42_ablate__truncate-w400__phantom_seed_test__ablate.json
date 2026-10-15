@@ -1,0 +1,22 @@
+{
+  "hash": "702f1af58114",
+  "run": "deberta_ft_s42_ablate",
+  "slice": "phantom_seed_test",
+  "strategy": "truncate-w400",
+  "ablate": true,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 2
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 400
+  },
+  "rows": 1982,
+  "limit": null,
+  "elapsed_s": 7.1,
+  "git_commit": "7250c24",
+  "created": "2026-10-15T00:40:14"
+}
