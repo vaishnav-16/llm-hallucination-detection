@@ -1,0 +1,22 @@
+{
+  "hash": "880c21540f5e",
+  "run": "modernbert_answeronly_s42",
+  "slice": "phantom_grid_sub",
+  "strategy": "truncate-w7168",
+  "ablate": true,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 7168
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 39.3,
+  "git_commit": "cd401b1",
+  "created": "2026-10-15T01:26:01"
+}
