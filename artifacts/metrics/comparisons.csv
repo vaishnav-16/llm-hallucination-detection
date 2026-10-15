@@ -244,6 +244,13 @@ lettucedetect,phantom_grid_sub,truncate-w3584,answer_tfidf:answer_tfidf,len=5000
 lettucedetect,phantom_grid_sub,truncate-w3584,answer_tfidf:answer_tfidf,len=10000,2400,auroc,-0.33715590277777785,-0.35508341145833333,-0.31817860243055557,0.0
 lettucedetect,phantom_grid_sub,truncate-w3584,answer_tfidf:answer_tfidf,len=20000,2400,auroc,-0.3340000000000001,-0.3527705034722222,-0.31504605902777777,0.0
 lettucedetect,phantom_grid_sub,truncate-w3584,answer_tfidf:answer_tfidf,len=30000,2400,auroc,-0.33486111111111116,-0.3519374565972222,-0.3174276649305556,0.0
+modernbert_answeronly_s42,phantom_grid_sub,truncate-w7168__ablate,answer_tfidf:answer_tfidf,all,12800,auroc,0.03816545410156247,0.027083761596679693,0.049203491210937485,0.0
+modernbert_answeronly_s42,phantom_grid_sub,truncate-w7168__ablate,answer_tfidf:answer_tfidf,len=500,800,auroc,0.03807499999999997,0.027033593749999998,0.04917890624999996,0.0
+modernbert_answeronly_s42,phantom_grid_sub,truncate-w7168__ablate,answer_tfidf:answer_tfidf,len=2000,2400,auroc,0.038171874999999966,0.027087187500000044,0.049205234374999955,0.0
+modernbert_answeronly_s42,phantom_grid_sub,truncate-w7168__ablate,answer_tfidf:answer_tfidf,len=5000,2400,auroc,0.038171874999999966,0.027087187500000044,0.049205234374999955,0.0
+modernbert_answeronly_s42,phantom_grid_sub,truncate-w7168__ablate,answer_tfidf:answer_tfidf,len=10000,2400,auroc,0.038171874999999966,0.027087187500000044,0.049205234374999955,0.0
+modernbert_answeronly_s42,phantom_grid_sub,truncate-w7168__ablate,answer_tfidf:answer_tfidf,len=20000,2400,auroc,0.038171874999999966,0.027087187500000044,0.049205234374999955,0.0
+modernbert_answeronly_s42,phantom_grid_sub,truncate-w7168__ablate,answer_tfidf:answer_tfidf,len=30000,2400,auroc,0.038171874999999966,0.027087187500000044,0.049205234374999955,0.0
 modernbert_ft_s42,phantom_grid_sub,chunk-w7168-o2048-min_phalluc,modernbert_ft_s42:truncate-w7168,all,12800,auroc,0.010487353515624909,0.007945774536132849,0.013202699279785157,0.0
 modernbert_ft_s42,phantom_grid_sub,chunk-w7168-o2048-min_phalluc,modernbert_ft_s42:truncate-w7168,len=500,800,auroc,0.0,0.0,0.0,1.0
 modernbert_ft_s42,phantom_grid_sub,chunk-w7168-o2048-min_phalluc,modernbert_ft_s42:truncate-w7168,len=2000,2400,auroc,0.0,0.0,0.0,1.0
