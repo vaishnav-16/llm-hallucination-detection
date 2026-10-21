@@ -1,0 +1,21 @@
+{
+  "hash": "61af6a1bbc06",
+  "run": "lettucedetect",
+  "slice": "halueval_val",
+  "strategy": "truncate-w3584",
+  "ablate": false,
+  "detector": {
+    "name": "lettucedetect",
+    "requires": "gpu",
+    "max_length": 4096
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 3584
+  },
+  "rows": 3000,
+  "limit": null,
+  "elapsed_s": 19.6,
+  "git_commit": "cc5fb01",
+  "created": "2026-10-12T05:20:36"
+}

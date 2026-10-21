@@ -1,0 +1,23 @@
+{
+  "hash": "d9d52ccfba8c",
+  "run": "modernbert_nli",
+  "slice": "halueval_test",
+  "strategy": "chunk-w1536-o1024-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "ModernBERT-base-nli",
+    "requires": "gpu",
+    "max_length": 2048,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 1536,
+    "overlap": 1024
+  },
+  "rows": 3000,
+  "limit": null,
+  "elapsed_s": 9.6,
+  "git_commit": "a7b3607",
+  "created": "2026-10-12T04:17:05"
+}

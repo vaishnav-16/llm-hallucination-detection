@@ -1,0 +1,81 @@
+{
+  "hash": "7fea4b46f359",
+  "run": "jev_v2_stack",
+  "slice": "halueval_val",
+  "strategy": "retrieve-w1500-o750-min_phalluc-k2-bidf",
+  "ablate": false,
+  "detector": {
+    "name": "jev_v2_stack",
+    "type": "stack",
+    "members": [
+      "jev_v2_support",
+      "jev_v2_numbers",
+      "jev_v2_entities",
+      "jev_v2_extra",
+      "jev_v2_choice2"
+    ],
+    "coefficients_standardized": {
+      "jev_v2_support": 0.053,
+      "jev_v2_numbers": -0.3055,
+      "jev_v2_entities": 0.7157,
+      "jev_v2_extra": 1.4469,
+      "jev_v2_choice2": 1.3331
+    },
+    "intercept": 0.1552,
+    "C": 1.0,
+    "fit_slices": [
+      "phantom_val",
+      "ragtruth_val",
+      "halueval_val"
+    ],
+    "out_of_fold_val_auroc": {
+      "phantom_val": 0.9962,
+      "ragtruth_val": 0.9117,
+      "halueval_val": 0.9508
+    },
+    "member_val_auroc": {
+      "phantom_val": {
+        "jev_v2_support": 0.9932,
+        "jev_v2_numbers": 0.8591,
+        "jev_v2_entities": 0.9641,
+        "jev_v2_extra": 0.9952,
+        "jev_v2_choice2": 0.9899
+      },
+      "ragtruth_val": {
+        "jev_v2_support": 0.9152,
+        "jev_v2_numbers": 0.8042,
+        "jev_v2_entities": 0.8491,
+        "jev_v2_extra": 0.9091,
+        "jev_v2_choice2": 0.9196
+      },
+      "halueval_val": {
+        "jev_v2_support": 0.9245,
+        "jev_v2_numbers": 0.8395,
+        "jev_v2_entities": 0.9222,
+        "jev_v2_extra": 0.9486,
+        "jev_v2_choice2": 0.9191
+      }
+    },
+    "fit_rows": 1501,
+    "out_of_fold": true
+  },
+  "member_hashes": {
+    "jev_v2_support__retrieve-w1500-o750-min_phalluc-k2-bidf__halueval_val": "4cdc35389bae",
+    "jev_v2_support__retrieve-w1500-o750-min_phalluc-k2-bidf__phantom_val": "6a231f88527e",
+    "jev_v2_support__retrieve-w1500-o750-min_phalluc-k2-bidf__ragtruth_val": "b833b8b743c4",
+    "jev_v2_numbers__retrieve-w1500-o750-min_phalluc-k2-bidf__halueval_val": "01da61cf58a7",
+    "jev_v2_numbers__retrieve-w1500-o750-min_phalluc-k2-bidf__phantom_val": "8777fb2afcb3",
+    "jev_v2_numbers__retrieve-w1500-o750-min_phalluc-k2-bidf__ragtruth_val": "b75b6fd5b4e8",
+    "jev_v2_entities__retrieve-w1500-o750-min_phalluc-k2-bidf__halueval_val": "b355a575d2ca",
+    "jev_v2_entities__retrieve-w1500-o750-min_phalluc-k2-bidf__phantom_val": "fe0860dc5999",
+    "jev_v2_entities__retrieve-w1500-o750-min_phalluc-k2-bidf__ragtruth_val": "867c67a0191f",
+    "jev_v2_extra__retrieve-w1500-o750-min_phalluc-k2-bidf__halueval_val": "d462aba18466",
+    "jev_v2_extra__retrieve-w1500-o750-min_phalluc-k2-bidf__phantom_val": "84bdd4c2b364",
+    "jev_v2_extra__retrieve-w1500-o750-min_phalluc-k2-bidf__ragtruth_val": "3182c60cc8e4",
+    "jev_v2_choice2__retrieve-w1500-o750-min_phalluc-k2-bidf__halueval_val": "f5a93548cb95",
+    "jev_v2_choice2__retrieve-w1500-o750-min_phalluc-k2-bidf__phantom_val": "adb2d8f1e3f6",
+    "jev_v2_choice2__retrieve-w1500-o750-min_phalluc-k2-bidf__ragtruth_val": "572fe899bf9c"
+  },
+  "rows": 600,
+  "created": "2026-10-11T12:44:13"
+}

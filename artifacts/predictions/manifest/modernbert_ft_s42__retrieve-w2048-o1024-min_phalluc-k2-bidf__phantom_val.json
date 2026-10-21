@@ -1,0 +1,25 @@
+{
+  "hash": "f2ac2f1b785e",
+  "run": "modernbert_ft_s42",
+  "slice": "phantom_val",
+  "strategy": "retrieve-w2048-o1024-min_phalluc-k2-bidf",
+  "ablate": false,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 2048,
+    "overlap": 1024,
+    "top_k": 2,
+    "retriever": "bm25_blockidf"
+  },
+  "rows": 296,
+  "limit": null,
+  "elapsed_s": 4.7,
+  "git_commit": "ad57670",
+  "created": "2026-10-14T00:48:50"
+}

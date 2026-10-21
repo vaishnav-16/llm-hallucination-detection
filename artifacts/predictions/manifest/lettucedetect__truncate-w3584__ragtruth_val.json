@@ -1,0 +1,21 @@
+{
+  "hash": "428e26317a4a",
+  "run": "lettucedetect",
+  "slice": "ragtruth_val",
+  "strategy": "truncate-w3584",
+  "ablate": false,
+  "detector": {
+    "name": "lettucedetect",
+    "requires": "gpu",
+    "max_length": 4096
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 3584
+  },
+  "rows": 2244,
+  "limit": null,
+  "elapsed_s": 37.8,
+  "git_commit": "cc5fb01",
+  "created": "2026-10-12T05:22:01"
+}

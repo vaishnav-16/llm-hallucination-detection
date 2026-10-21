@@ -1,214 +1,107 @@
-# CLAUDE.md — FastHalluCheck Project
+# CLAUDE.md: FastHalluCheck v2 (length-robust hallucination detection)
 
-## Project Overview
+## What this project is
 
-**FastHalluCheck: Rapid Evaluation of Pretrained Hallucination Detectors on QA Benchmarks**
+**Research question:** how do hallucination detectors degrade as the context grows from a ~500-token passage
+to 30K nominal tokens and as the evidence moves (beginning / middle / end), and does chunked or
+retrieval-based verification recover the loss? Every detector is judged against answer-only shortcut baselines.
 
-This is a self-contained ML evaluation project. The goal is to evaluate pretrained hallucination detection models against benchmark QA datasets and produce a clean NeurIPS-style report with quantitative metrics and qualitative error analysis.
+- **Main benchmark:** PHANTOM (`seyled/Phantom_Hallucination_Detection`, Ji et al., NeurIPS 2025 D&B).
+  10-K and DEF 14A are test-only at every length; 8-K and 497K are train/val (the paper's split).
+- **Also:** RAGTruth (`wandb/RAGTruth-processed`, real LLM responses) and HaluEval QA (`pminervini/HaluEval`).
+  HaluEval is a shortcut case study: answer length alone gives about 0.97 accuracy.
+- v1 (HHEM + DeBERTa-small on 500 HaluEval questions) lives in `legacy/` for reference only. Its headline numbers
+  are not valid (see README "Why v2").
 
-**Research Question:** How effective are pretrained hallucination detection models at identifying unsupported answers in question-answering settings?
+## Critical rules
 
-## Critical Rules
+1. **Never ask the user for input mid-task.** Pick the most reasonable default and document it.
+2. **Never peek at test labels.** Thresholds, calibration, ensemble weights and checkpoint selection use
+   validation slices only. Score direction is fixed in each detector adapter (`p_halluc`, higher = hallucinated),
+   never inferred from labels.
+3. **No silent fallbacks.** A model that fails to load, a batch that fails at batch size 1, or a schema surprise
+   must raise (`SchemaError`, `ScoringError`). Never substitute default scores or another model under the same name.
+4. **Never train on PHANTOM 10-K or DEF 14A rows.** Their long variants reuse the seed questions and answers.
+   Splits are grouped by `pair_id` and committed in `artifacts/splits.json`. Do not rebuild them casually.
+5. **Every detector result is reported next to the answer-only baselines and on the hard subset.**
+6. **Commit small results, never data or weights:** `artifacts/` and `report/` are committed; `data/`,
+   `models/` and `results/` are git-ignored. Weights go to the HF Hub (`scripts/upload_models.py`).
+7. **Log progress** with `logging` (not print) so long runs show pairs/s and the current cell.
 
-1. **NEVER ask the user for input.** Make all decisions autonomously. If something is ambiguous, pick the most reasonable default and document it.
-2. **If a package fails to install, find an alternative.** Do not stop. For example, if `hdm2` fails, skip it and note it in the report.
-3. **If a dataset schema is unexpected, inspect it and adapt.** Print columns, print 3 sample rows, then write the normalization logic.
-4. **If a model fails to load or run, catch the error, log it, and move to the next step.**
-5. **Always print progress** so the user can see what's happening: "Loading dataset...", "Running inference on 300 examples...", "Computing metrics...", etc.
-6. **Save all intermediate outputs** to `results/` as CSV or JSON so nothing is lost if a later step fails.
-7. **GPU setup:** The machine has an **NVIDIA RTX 4070 Mobile (8GB VRAM)** and **16GB system RAM**. Always try CUDA first: `device = "cuda" if torch.cuda.is_available() else "cpu"` and print which device is being used. If CUDA fails at runtime (OOM etc.), catch the error, halve the batch size, and retry. If still failing, fall back to CPU automatically.
-8. **Batch sizes:** Use `batch_size=32` as default on GPU (HHEM/DeBERTa-base is ~86M params, fits easily in 8GB VRAM). On CPU fallback, use `batch_size=8`.
+## Two environments
 
-## Repository Structure
+| | Cloud session (Claude Code on the web) | Local laptop (Windows) |
+|---|---|---|
+| Hardware | 4 CPU cores, ~15 GB RAM, **no GPU** | RTX 4070 Mobile 8 GB, 16 GB RAM |
+| Runs | code, `prepare`, `baselines`, API stages, `evaluate`, `report`, CPU `smoke` | `finetune`, GPU `score` configs, Qwen judge |
+| Persistence | ephemeral: commit and push everything worth keeping | normal |
+
+`python -m src.cli status` lists each stage, what it needs (cpu / gpu / api), whether it is done, and the
+exact command. **`HANDOFF.md` is the step-by-step runbook for the GPU side.** On Windows use `python -m ...`
+commands; there are no bash-only steps.
+
+## Layout
 
 ```
-hallucination-project/
-├── CLAUDE.md                    # This file
-├── README.md                    # Project overview and how to run
-├── requirements.txt             # Python dependencies
-├── setup.sh                     # One-command setup script
-├── run_all.sh                   # One-command full pipeline
-├── src/
-│   ├── load_data.py             # Download and normalize HaluEval QA
-│   ├── run_hhem.py              # Run Vectara HHEM on normalized data
-│   ├── evaluate_results.py      # Compute metrics from predictions
-│   ├── error_analysis.py        # Analyze false positives/negatives
-│   └── generate_report.py       # Auto-generate markdown report
-├── data/                        # Normalized datasets (generated)
-├── results/                     # Predictions, metrics, plots (generated)
-├── figures/                     # Charts and visualizations (generated)
-└── report/
-    └── report.md                # Final NeurIPS-style report (generated)
+configs/            YAML experiment configs (smoke, zeroshot_grid, finetune_*, finetuned_grid, judge_*, judges_api, providers)
+src/config.py       paths, pinned HF revisions (datasets + models), seeds, device selection
+src/data/           loaders (halueval, phantom, ragtruth), schema validation, splits, data card, answer rewrite
+src/detectors/      base (p_halluc contract, OOM-halving batch loop), hf_models (HHEM, seq-cls, LettuceDetect),
+                    llm_judge (local Qwen), api_judge (Dartmouth Chat / Gemini, cached), jev (TypeSafe Jev), baselines, stub
+src/verify/         chunking (truncate / chunk / retrieve; min/mean/top-k aggregation), slices, runner (resumable)
+src/train/          finetune (NLI-initialised binary head, val-only selection), augment (distractor padding)
+src/eval/           metrics (AUROC, F1, ECE, pair-clustered bootstrap, McNemar), threshold, evaluate
+src/display/        report.py (figures + report/final_report.md from artifacts only); figures.py (legacy helpers)
+src/dashboard/, app.py   Streamlit dashboard (still reads v1 result files; to be ported to artifacts/metrics)
+src/cli/            `python -m src.cli <command>`
+tests/              offline pytest suite (no network)
+artifacts/          committed: splits.json, data_card.md, predictions/*.parquet + manifest/<run_id>.json, metrics/, figures/, training/
+legacy/             v1 scripts, untouched
 ```
 
-## Tech Stack
+## Pipeline
 
-- **Python 3.10+**
-- `datasets` — load HaluEval from Hugging Face Hub
-- `transformers` — load and run pretrained models
-- `sentence-transformers` — for cross-encoder models like HHEM
-- `scikit-learn` — metrics (accuracy, precision, recall, F1, confusion matrix)
-- `pandas` — data manipulation
-- `matplotlib` / `seaborn` — plotting
-- `torch` — ML backend (CUDA preferred, CPU fallback)
-
-## Dataset: HaluEval QA
-
-- **Source:** `pminervini/HaluEval` on Hugging Face Hub
-- **Subset:** QA
-- **Expected schema:** Each example has a question, some knowledge/context, a correct answer, and a hallucinated answer.
-- **Normalization strategy:** Convert into pairs of (context, response, label) where label=1 means hallucinated and label=0 means faithful. This means each raw example produces TWO evaluation rows: one with the correct answer (label=0) and one with the hallucinated answer (label=1).
-- **Sample size:** Use 500 raw examples → 1000 evaluation pairs. With GPU this runs fast (~2-3 min). Scripts should accept `--num_samples` via argparse to allow adjustment.
-
-## Model: Vectara HHEM
-
-- **Model ID:** `vectara/hallucination_evaluation_model`
-- **Type:** Cross-encoder / text-classification model
-- **Input:** Pair of (premise/context, hypothesis/response)
-- **Output:** Score from 0 to 1 where higher = more consistent (less hallucinated)
-- **Threshold:** 0.5 — scores below 0.5 are predicted as hallucinated
-- **Loading:** Use `from sentence_transformers import CrossEncoder` and load the model. If that fails, try `transformers` pipeline with `text-classification`.
-- **IMPORTANT:** HHEM scores CONSISTENCY. So score > 0.5 means NOT hallucinated (label=0), score <= 0.5 means hallucinated (label=1). Make sure the label mapping is correct or all metrics will be inverted.
-
-## Metrics to Compute
-
-- Accuracy
-- Precision (for hallucination class)
-- Recall (for hallucination class)
-- F1 (for hallucination class)
-- Confusion matrix (as heatmap figure)
-- Score distribution histogram by true label
-- Latency: total time and samples/second
-
-## Error Analysis
-
-- Print 10 false positives (predicted hallucinated but actually faithful)
-- Print 10 false negatives (predicted faithful but actually hallucinated)
-- For each error, show: question, context (truncated to 200 chars), response, true label, predicted label, score
-- Save error analysis to `results/error_analysis.csv`
-
-## Report Structure (NeurIPS-style Markdown)
-
-1. Title + Abstract
-2. Introduction — why hallucination detection matters
-3. Related Work — HaluEval, PHANTOM, HHEM, other detectors
-4. Task Definition — grounded vs hallucinated response classification
-5. Dataset — HaluEval QA description and preprocessing
-6. Method — HHEM as zero-shot hallucination detector
-7. Experimental Setup — hardware, sample size, threshold, metrics
-8. Results — table of metrics + figures
-9. Error Analysis — patterns in false positives and false negatives
-10. Discussion — strengths, weaknesses, when this approach works
-11. Limitations — single dataset, single model, small sample, no fine-tuning comparison
-12. Conclusion
-13. References
-
-## Pipeline Execution Order
-
-```bash
-# Step 1: Install dependencies
-pip install -r requirements.txt
-
-# Step 2: Load and normalize dataset
-python src/load_data.py
-
-# Step 3: Run HHEM inference
-python src/run_hhem.py
-
-# Step 4: Compute metrics
-python src/evaluate_results.py
-
-# Step 5: Run error analysis
-python src/error_analysis.py
-
-# Step 6: Generate report
-python src/generate_report.py
+```
+prepare -> baselines -> [rewrite-halueval] -> score (smoke | zeroshot_grid | judges_api)
+        -> finetune -> score (finetuned_grid | judge_qwen4b) -> evaluate -> report
 ```
 
-Each script should be runnable independently (reads from files, writes to files) and should also work as part of the sequential pipeline via `python run_all.py` (cross-platform) or `./run_all.sh` (bash/Linux/WSL).
+Scoring is config-driven and resumable per PHANTOM cell. A run's results are tied to a hash of its config, so a
+changed config reruns only that run. `--limit` and `scratch: true` configs write to `results/scratch_*`, never to `artifacts/`.
 
-## Environment
+## Key facts from the data (see `artifacts/data_card.md`)
 
-- **OS:** Windows 10/11
-- **GPU:** NVIDIA RTX 4070 Mobile (8GB VRAM)
-- **RAM:** 16GB
-- **IMPORTANT:** Use `python` commands, not bash scripts, since this is Windows. Use `python setup.py` instead of `./setup.sh`. Use `python run_all.py` instead of `./run_all.sh`. If running in WSL, bash scripts work fine.
+- PHANTOM labels are the strings "hallucination" / "not hallucination". The v1 loader mapped every label to 0,
+  and its file names had the wrong case (`10K` vs `10k`).
+- Seed passages are ~560-640 tokens at the median and ~800-925 at p95 (max ~1,700) under encoder tokenizers.
+  They do not fit DeBERTa's 512 window. The "30000-token" files are ~35-45K tokens.
+- `tasksource/ModernBERT-base-nli` is configured for 2,048 positions. Fine-tuning extends it to 8,192
+  (`extend_positions`, RoPE).
+- DEF 14A long files regenerate the answers for about a third of the pairs (`variant=reanswered`). The 10-K long files match the seed exactly.
+- Answer-only TF-IDF reaches about 0.96 AUROC on PHANTOM test filings and 0.81 on RAGTruth. The hard subset
+  (faithful answer >= 224 chars) lowers PHANTOM's to about 0.89.
 
-## Fallback Strategies
+## Working in parallel (laptop GPU + cloud API)
 
-| Problem | Fallback |
-|---------|----------|
-| HaluEval fails to load from Hub | Try `datasets.load_dataset("pminervini/HaluEval", "qa")` with different config names. If all fail, create a synthetic mini-dataset of 50 examples. |
-| HHEM fails to load | Try `transformers` pipeline instead of `sentence_transformers`. If that fails, use a simple embedding similarity baseline with `all-MiniLM-L6-v2`. |
-| CUDA OOM or not available | Halve batch_size and retry. If still OOM, fall back to CPU with batch_size=8. |
-| Any script crashes | Wrap main() in try/except, print the traceback, save partial results, exit with code 1. |
+The laptop runs GPU stages while the cloud session runs API stages (Jev), on the same branch. Prediction files and run
+manifests are one file per run, so pushes from both sides don't collide. Always `git pull --rebase` before `git push`.
+Derived files (`artifacts/metrics/`, `artifacts/figures/`, `report/`) are regenerated by `evaluate` / `report`. If
+they conflict, keep either side and rerun `evaluate` and `report` after pulling; never hand-merge them.
 
-## Style Guidelines
+## TypeSafe Jev
 
-- All Python files should have docstrings at the top explaining what they do.
-- Use `argparse` for any configurable parameters (sample size, threshold, paths).
-- Use `logging` module, not bare print statements.
-- Use type hints.
-- Use `if __name__ == "__main__":` pattern.
-- Set random seed to 42 everywhere for reproducibility.
+- `src/detectors/jev.py`, config `configs/jev.yaml`, key `TYPESAFE_API_KEY` (in `.env` or the environment). No GPU.
+  Docs: https://docs.typesafe.ai/llms.txt (append `.md` to any page path). Read the live API and
+  jaggedness pages before changing the adapter.
+- `POST https://api.typesafe.ai/v1/systemone`; model pinned to `jev-1.13.0` (`jev-latest` is a moving alias).
+  32K tokens for state plus the longest question, 64K per request; $0.042 per million input tokens.
+- Every request asks a `noul` and a `choice` per claim. All claims sharing a document chunk go in one request:
+  questions are independent and the state is billed once. `jev_noul` and `jev_choice` send identical requests,
+  so the second run is free from `artifacts/api_cache/jev.jsonl`.
+- Spend is tracked in `artifacts/api_cache/jev_spend.json`; `max_usd` (4.5) stops runs before the $5 credit runs out.
+  Always run `score --config configs/jev.yaml --dry-run` before a live run, and commit the cache with the predictions.
 
-## Token Efficiency (Important for Usage Limits)
+## Style
 
-- **Model switching:** The project settings.json defaults to `sonnet` which handles 90% of this project fine. If you need deeper reasoning for debugging a tricky failure, switch with `/model opus`, then switch back with `/model sonnet` when done. You can also use `/model opusplan` which automatically uses Opus for planning and Sonnet for execution.
-- Claude Code WILL automatically fall back to Sonnet if Opus quota is exhausted — this is fine for this project.
-- Use `/compact` between phases if the context window is getting large.
-- Write multiple scripts in a single turn when possible before running them.
-- If you hit a limit mid-project, the user will resume with a new session. All scripts read from and write to files, so you can pick up from any phase by checking which output files already exist.
-- Check quota status anytime with `/status`.
-
-## Phase 2: Improvement Phase
-
-The baseline pipeline is complete. Phase 2 improves the project with:
-
-### Baseline Results (for reference)
-- Accuracy: 73.2%, Precision: 88.2%, Recall: 53.6%, F1: 66.7%, ROC-AUC: 71.7%
-- 232 false negatives, 36 false positives — HHEM is too conservative
-
-### PHANTOM Dataset
-- **Source:** `seyled/Phantom_Hallucination_Detection` on Hugging Face
-- **Loading:** `load_dataset("seyled/Phantom_Hallucination_Detection", data_files="PhantomDataset/Phantom_10K_seed.csv")`
-- **Alternative files:** `Phantom_10K_seed.csv`, `Phantom_def14A_seed.csv`, `Phantom_497K_seed.csv` — use seed variants (short ~500 token contexts)
-- **Domain:** Financial (SEC filings) — expect worse performance than HaluEval since models weren't trained on finance
-- **Schema:** Has query-answer-document triplets with correct and hallucinated answers. Inspect actual columns before coding.
-- **PHANTOM paper:** Ji et al., 2025. "PHANTOM: A Benchmark for Hallucination Detection in Financial Long-Context QA." NeurIPS 2025 Datasets and Benchmarks Track.
-
-### Improvement Strategies
-1. **Threshold optimization:** Sweep 0.1–0.9, find optimal by F1 and Youden's J
-2. **Fine-tune DeBERTa-v3-base:** Same backbone as HHEM, supervised on HaluEval 80/20 split
-3. **Ensemble:** Combine HHEM + fine-tuned DeBERTa predictions
-4. **Cross-domain evaluation:** Test all models on PHANTOM (financial domain)
-
-### Additional Output Files (Phase 2)
-```
-models/deberta-hallucination-detector/    # Fine-tuned model
-results/optimal_threshold_metrics.json
-results/hhem_predictions_optimized.csv
-results/finetuned_predictions.csv
-results/finetuned_metrics.json
-results/phantom_hhem_predictions.csv
-results/phantom_finetuned_predictions.csv
-results/phantom_metrics.json
-results/ensemble_metrics.json
-results/comprehensive_error_analysis.csv
-figures/threshold_optimization.png
-figures/model_comparison_bar.png
-figures/roc_curves.png
-figures/error_overlap.png
-figures/context_length_analysis.png
-figures/cross_domain_comparison.png
-figures/phantom_vs_halueval.png
-report/final_report.md
-```
-
-### Fine-tuning Fallback Strategy
-| Problem | Fallback |
-|---------|----------|
-| DeBERTa-v3-base OOM during training | Use gradient_accumulation_steps=4, batch_size=2. If still OOM, use deberta-v3-small. If still OOM, use distilbert-base-uncased. |
-| PHANTOM dataset fails to load | Try different file patterns in PhantomDataset/ folder. If all fail, skip PHANTOM evaluation and note it in the report. |
-| Fine-tuning takes too long | Reduce to 2 epochs. Use fp16=True. Reduce max_length to 256 tokens. |
-| Ensemble gives worse results than best single model | That's a valid finding — report it honestly. |
+Module docstrings that explain why, `argparse` / CLI flags for anything configurable, `logging`, type hints,
+`pathlib`, seed 42 (`src.config.seed_everything`), `num_workers=0` (Windows). Run `python -m pytest` before committing.

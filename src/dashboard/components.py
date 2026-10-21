@@ -1,178 +1,109 @@
-"""Reusable UI components for the Streamlit dashboard."""
+"""Plotly figures and small widgets shared by the dashboard pages.
 
-from typing import Optional
+Figures take already-filtered frames from ``src.dashboard.data`` so the chart code holds no selection
+logic. Answer-only baselines are always drawn the same way (grey, dashed or dotted) so a reader can tell
+at a glance whether a detector beats a model that never looked at the context.
+"""
 
-import streamlit as st
-import plotly.graph_objects as go
-import plotly.express as px
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 
-from src.dashboard.config import COLORS
-
-
-def metric_card(label: str, value, delta: Optional[str] = None, delta_color: str = "normal"):
-    """Display a metric card using st.metric."""
-    if isinstance(value, float):
-        value = f"{value:.4f}"
-    st.metric(label=label, value=value, delta=delta, delta_color=delta_color)
+from src.dashboard.config import BASELINE_DASH, COLORS, metric_name
 
 
-def metric_cards_row(metrics: dict, baseline: Optional[dict] = None):
-    """Display a row of 4 key metric cards."""
-    cols = st.columns(4)
-    keys = [
-        ("accuracy", "Accuracy"),
-        ("precision_hallucinated", "Precision"),
-        ("recall_hallucinated", "Recall"),
-        ("f1_hallucinated", "F1 Score"),
-    ]
-
-    for col, (key, label) in zip(cols, keys):
-        val = metrics.get(key, metrics.get(key.replace("_hallucinated", ""), 0))
-        delta = None
-        if baseline and key in baseline:
-            base_val = baseline.get(key, baseline.get(key.replace("_hallucinated", ""), 0))
-            if base_val > 0:
-                diff = val - base_val
-                delta = f"{diff:+.4f}"
-        with col:
-            metric_card(label, val, delta)
+def _has_ci(df: pd.DataFrame) -> bool:
+    return {"ci_lo", "ci_hi"} <= set(df.columns) and df["ci_lo"].notna().any() and df["ci_hi"].notna().any()
 
 
-def plotly_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, title: str = "Confusion Matrix"):
-    """Interactive Plotly confusion matrix."""
-    from sklearn.metrics import confusion_matrix
-    cm = confusion_matrix(y_true, y_pred)
-    labels = ["Faithful", "Hallucinated"]
+def _baseline_name(row: pd.Series) -> str:
+    return f"{row['detector']} (answer-only)"
 
-    fig = go.Figure(data=go.Heatmap(
-        z=cm,
-        x=labels,
-        y=labels,
-        text=cm,
-        texttemplate="%{text}",
-        textfont={"size": 20},
-        colorscale="Blues",
-        hovertemplate="True: %{y}<br>Predicted: %{x}<br>Count: %{z}<extra></extra>",
+
+def bar_with_ci(df: pd.DataFrame, metric: str, baselines: pd.DataFrame | None = None) -> go.Figure:
+    """Bars per detector x strategy with 95% CI error bars and horizontal baseline reference lines."""
+    fig = go.Figure()
+    error_y = None
+    if _has_ci(df):
+        error_y = dict(type="data", symmetric=False, array=(df["ci_hi"] - df["value"]).to_numpy(),
+                       arrayminus=(df["value"] - df["ci_lo"]).to_numpy())
+    fig.add_trace(go.Bar(
+        x=df["label"], y=df["value"], error_y=error_y, marker_color=COLORS["faithful"],
+        customdata=np.stack([df["detector"], df["strategy"], df["n"]], axis=-1) if len(df) else None,
+        hovertemplate="%{customdata[0]}<br>%{customdata[1]}<br>value %{y:.3f}<br>n=%{customdata[2]}<extra></extra>",
+        name="detectors", showlegend=False,
     ))
-    fig.update_layout(
-        title=title,
-        xaxis_title="Predicted",
-        yaxis_title="True",
-        height=400,
-    )
+    if baselines is not None:
+        for _, row in baselines.iterrows():
+            fig.add_hline(
+                y=row["value"], line_dash=BASELINE_DASH.get(row["detector"], "dash"), line_color=COLORS["baseline"],
+                annotation_text=f"{_baseline_name(row)}: {row['value']:.3f}", annotation_position="top left",
+            )
+    fig.update_layout(yaxis_title=metric_name(metric), xaxis_title=None, height=480, margin=dict(t=30, b=10),
+                      xaxis_tickangle=-30)
+    if metric in ("auroc", "balanced_accuracy"):
+        fig.add_hline(y=0.5, line_color="#BBBBBB", line_width=1, annotation_text="chance", annotation_position="bottom right")
     return fig
 
 
-def plotly_score_distribution(
-    scores_faithful: np.ndarray,
-    scores_hallucinated: np.ndarray,
-    threshold: float = 0.5,
-    title: str = "Score Distribution",
-):
-    """Interactive Plotly score distribution histogram."""
-    fig = go.Figure()
-    fig.add_trace(go.Histogram(
-        x=scores_faithful, nbinsx=40, name="Faithful",
-        marker_color=COLORS["faithful"], opacity=0.6,
-        histnorm="probability density",
-    ))
-    fig.add_trace(go.Histogram(
-        x=scores_hallucinated, nbinsx=40, name="Hallucinated",
-        marker_color=COLORS["hallucinated"], opacity=0.6,
-        histnorm="probability density",
-    ))
-    fig.add_vline(x=threshold, line_dash="dash", line_color="white",
-                  annotation_text=f"Threshold={threshold:.2f}")
-    fig.update_layout(
-        title=title,
-        xaxis_title="Consistency Score",
-        yaxis_title="Density",
-        barmode="overlay",
-        height=400,
-    )
-    return fig
-
-
-def plotly_roc_curves(y_true: np.ndarray, models: dict, title: str = "ROC Curves"):
-    """Interactive Plotly ROC curves for multiple models."""
-    from sklearn.metrics import roc_curve, roc_auc_score
-    colors = [COLORS["model_hhem"], COLORS["model_deberta"],
-              COLORS["model_ensemble"], COLORS["model_phantom"]]
-
-    fig = go.Figure()
-    for (name, probs), color in zip(models.items(), colors):
-        try:
-            fpr, tpr, _ = roc_curve(y_true, probs)
-            auc = roc_auc_score(y_true, probs)
-            fig.add_trace(go.Scatter(
-                x=fpr, y=tpr, name=f"{name} (AUC={auc:.3f})",
-                line=dict(color=color, width=2),
-            ))
-        except Exception:
-            pass
-
+def _band(fig: go.Figure, x: pd.Series, lo: pd.Series, hi: pd.Series, color: str, group: str) -> None:
     fig.add_trace(go.Scatter(
-        x=[0, 1], y=[0, 1], name="Random",
-        line=dict(color="gray", dash="dash"),
+        x=list(x) + list(x)[::-1], y=list(hi) + list(lo)[::-1], fill="toself", fillcolor=color, opacity=0.15,
+        line=dict(width=0), hoverinfo="skip", showlegend=False, legendgroup=group,
     ))
-    fig.update_layout(
-        title=title,
-        xaxis_title="False Positive Rate",
-        yaxis_title="True Positive Rate",
-        height=500,
-    )
-    return fig
 
 
-def plotly_model_comparison_bar(metrics: dict, title: str = "Model Comparison"):
-    """Interactive Plotly bar chart comparing models."""
-    names = list(metrics.keys())
-    metric_keys = ["accuracy", "precision_hallucinated", "recall_hallucinated", "f1_hallucinated"]
-    labels = ["Accuracy", "Precision", "Recall", "F1"]
+_PALETTE = ["#4A90D9", "#E67E22", "#27AE60", "#8E44AD", "#C0392B", "#16A085", "#D35400", "#2C3E50",
+            "#F1C40F", "#7F8C8D", "#E84393", "#00B894"]
 
+
+def line_with_ci(df: pd.DataFrame, x: str, metric: str, baselines: pd.DataFrame | None = None,
+                 log_x: bool = False, x_title: str | None = None) -> go.Figure:
+    """One line per ``label`` with a shaded CI band; baselines as grey dashed lines."""
     fig = go.Figure()
-    for key, label in zip(metric_keys, labels):
-        vals = []
-        for name in names:
-            m = metrics[name]
-            vals.append(m.get(key, m.get(key.replace("_hallucinated", ""), 0)))
-        fig.add_trace(go.Bar(name=label, x=names, y=vals, text=[f"{v:.3f}" for v in vals],
-                             textposition="auto"))
-
-    fig.update_layout(
-        title=title,
-        barmode="group",
-        yaxis_range=[0, 1.1],
-        height=500,
-    )
+    for i, (label, g) in enumerate(df.groupby("label", sort=True)):
+        color = _PALETTE[i % len(_PALETTE)]
+        g = g.sort_values(x)
+        xs = g[x].astype(str) if not log_x else g[x]
+        if _has_ci(g):
+            _band(fig, xs, g["ci_lo"], g["ci_hi"], color, label)
+        fig.add_trace(go.Scatter(x=xs, y=g["value"], mode="lines+markers", name=label, line=dict(color=color),
+                                 legendgroup=label, hovertemplate=f"{label}<br>%{{x}}: %{{y:.3f}}<extra></extra>"))
+    if baselines is not None and len(baselines):
+        for det, g in baselines.groupby("detector"):
+            g = g.sort_values(x)
+            xs = g[x].astype(str) if not log_x else g[x]
+            fig.add_trace(go.Scatter(x=xs, y=g["value"], mode="lines", name=f"{det} (answer-only)",
+                                     line=dict(color=COLORS["baseline"], dash=BASELINE_DASH.get(det, "dash"))))
+    fig.update_layout(yaxis_title=metric_name(metric), xaxis_title=x_title or x, height=460, margin=dict(t=30, b=10),
+                      legend=dict(orientation="h", yanchor="top", y=-0.18))
+    if log_x:
+        fig.update_xaxes(type="log")
     return fig
 
 
-def data_table(df: pd.DataFrame, max_rows: int = 100):
-    """Display a paginated data table."""
-    total = len(df)
-    if total > max_rows:
-        page = st.number_input("Page", min_value=1, max_value=(total // max_rows) + 1, value=1)
-        start = (page - 1) * max_rows
-        end = min(start + max_rows, total)
-        st.caption(f"Showing rows {start+1}-{end} of {total}")
-        st.dataframe(df.iloc[start:end], use_container_width=True)
-    else:
-        st.dataframe(df, use_container_width=True)
+def score_histogram(preds: pd.DataFrame, val_thr: float, explore_thr: float | None = None) -> go.Figure:
+    """Overlaid histograms of p_halluc for faithful vs hallucinated rows, with threshold markers."""
+    fig = go.Figure()
+    for label, name, color in ((0, "faithful (label 0)", COLORS["faithful"]), (1, "hallucinated (label 1)", COLORS["hallucinated"])):
+        fig.add_trace(go.Histogram(x=preds.loc[preds["label"] == label, "p_halluc"], name=name, marker_color=color,
+                                   opacity=0.6, nbinsx=50))
+    fig.add_vline(x=val_thr, line_color=COLORS["val_threshold"], line_dash="dash",
+                  annotation_text=f"reported threshold {val_thr:.3f}", annotation_position="top")
+    if explore_thr is not None and not np.isclose(explore_thr, val_thr):
+        fig.add_vline(x=explore_thr, line_color=COLORS["explore_threshold"], line_dash="dot",
+                      annotation_text=f"exploration {explore_thr:.3f}", annotation_position="bottom")
+    fig.update_layout(barmode="overlay", xaxis_title="p_halluc (higher = more likely hallucinated)", yaxis_title="rows",
+                      height=380, margin=dict(t=30, b=10), legend=dict(orientation="h", yanchor="top", y=-0.2))
+    return fig
 
 
-def no_data_message(message: str = "No data available. Run the pipeline first."):
-    """Display a styled warning when data is missing."""
-    st.warning(message)
-    st.markdown("""
-    **To generate results, run:**
-    ```bash
-    python run_all.py
-    ```
-    Or use the CLI:
-    ```bash
-    python -m src.cli.commands run
-    ```
-    """)
+def confusion_heatmap(cm: np.ndarray, title: str) -> go.Figure:
+    """2x2 confusion matrix [[TN, FP], [FN, TP]] as an annotated heatmap."""
+    labels = ["faithful", "hallucinated"]
+    fig = go.Figure(go.Heatmap(z=cm, x=[f"pred {l}" for l in labels], y=[f"true {l}" for l in labels],
+                               colorscale="Blues", showscale=False, text=cm, texttemplate="%{text}"))
+    fig.update_layout(title=title, height=330, margin=dict(t=50, b=10), yaxis_autorange="reversed")
+    return fig

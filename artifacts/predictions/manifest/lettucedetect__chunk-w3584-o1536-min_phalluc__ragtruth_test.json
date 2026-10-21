@@ -1,0 +1,22 @@
+{
+  "hash": "fc10d3354725",
+  "run": "lettucedetect",
+  "slice": "ragtruth_test",
+  "strategy": "chunk-w3584-o1536-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "lettucedetect",
+    "requires": "gpu",
+    "max_length": 4096
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 3584,
+    "overlap": 1536
+  },
+  "rows": 2675,
+  "limit": null,
+  "elapsed_s": 47.7,
+  "git_commit": "002e0cb",
+  "created": "2026-10-12T08:45:28"
+}

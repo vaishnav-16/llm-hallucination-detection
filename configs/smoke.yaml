@@ -1,0 +1,42 @@
+# CPU smoke test: every detector type and strategy on a handful of pairs, including one 30K-token cell.
+# Writes to results/scratch_predictions (never to the committed artifacts). ~10-20 min on 4 CPU cores.
+name: smoke
+scratch: true
+runs:
+  - name: stub
+    detector: {type: stub}
+    strategies:
+      - {strategy: truncate, window: 256}
+      - {strategy: chunk, window: 256, overlap: 128}
+      - {strategy: retrieve, window: 256, overlap: 128, top_k: 2}
+    slices: [phantom_grid_sub, phantom_val, halueval_test, ragtruth_test]
+    max_pairs: 3
+
+  - name: modernbert_nli
+    detector: {type: seqcls, model: modernbert_nli, max_length: 2048, batch_size: 2, precision: fp32}
+    strategies:
+      - {strategy: truncate, window: 512}
+      - {strategy: chunk, window: 1536, overlap: 1024}
+    slices: [phantom_seed_test, cell-phantom_10k_30000_middle, halueval_test]
+    max_pairs: 2
+
+  - name: deberta_nli
+    detector: {type: seqcls, model: deberta_nli, max_length: 512, batch_size: 4}
+    strategies:
+      - {strategy: chunk, window: 400, overlap: 200}
+    slices: [phantom_seed_test, halueval_test]
+    max_pairs: 2
+
+  - name: hhem
+    detector: {type: hhem, max_length: 4096, batch_size: 2}
+    strategies:
+      - {strategy: chunk, window: 2048, overlap: 1024}
+    slices: [phantom_seed_test, halueval_test]
+    max_pairs: 2
+
+  - name: lettucedetect
+    detector: {type: lettuce, max_length: 4096, batch_size: 2, precision: fp32}
+    strategies:
+      - {strategy: chunk, window: 3500, overlap: 1024}
+    slices: [phantom_seed_test, halueval_test]
+    max_pairs: 2

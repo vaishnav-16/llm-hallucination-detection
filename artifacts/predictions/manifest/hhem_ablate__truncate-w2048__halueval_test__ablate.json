@@ -1,0 +1,23 @@
+{
+  "hash": "cb89c06bb8ab",
+  "run": "hhem_ablate",
+  "slice": "halueval_test",
+  "strategy": "truncate-w2048",
+  "ablate": true,
+  "detector": {
+    "name": "hhem",
+    "requires": "gpu",
+    "max_length": 2560,
+    "premises_truncated": 0,
+    "attention": "t5_bias_sdpa"
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 2048
+  },
+  "rows": 3000,
+  "limit": null,
+  "elapsed_s": 3.9,
+  "git_commit": "53cac1b",
+  "created": "2026-10-12T09:41:45"
+}

@@ -1,0 +1,114 @@
+"""Detector interface and the shared batching loop.
+
+Score convention, used everywhere: ``p_halluc`` in [0, 1], where higher means more likely hallucinated.
+Adapters convert their model's native output once, in their own code. Nothing in the pipeline
+ever inspects gold labels to decide which way a score points.
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from abc import ABC, abstractmethod
+from typing import Callable, Sequence
+
+import numpy as np
+
+from src.verify.chunking import SpanFn, whitespace_spans
+
+logger = logging.getLogger(__name__)
+
+
+class ScoringError(RuntimeError):
+    """A batch could not be scored even at batch size 1."""
+
+
+class Detector(ABC):
+    """A model that scores (premise, hypothesis) pairs."""
+
+    name: str = "detector"
+    requires: str = "cpu"          # cpu | gpu | api: where full-size runs are expected to happen
+    uses_context: bool = True      # False for answer-only shortcut baselines
+    max_length: int = 512          # model input limit in tokens (premise + hypothesis + specials)
+
+    def span_fn(self) -> SpanFn:
+        """Token spans used for chunking. Model detectors override this with their own tokenizer."""
+        return whitespace_spans
+
+    def count_tokens(self, text: str) -> int:
+        return len(self.span_fn()(text))
+
+    @abstractmethod
+    def score_pairs(self, premises: Sequence[str], hypotheses: Sequence[str]) -> np.ndarray:
+        """Return p_halluc for each pair."""
+
+    def describe(self) -> dict:
+        return {"name": self.name, "requires": self.requires, "max_length": self.max_length}
+
+
+def fit_premise(tokenizer, premise: str, budget: int) -> tuple[str, bool]:
+    """Cut ``premise`` to at most ``budget`` tokens (keeping its beginning). Returns (text, was_cut)."""
+    if budget <= 0:
+        raise ScoringError(f"no token budget left for the premise (budget {budget}); the claim alone is too long")
+    enc = tokenizer(premise, add_special_tokens=False, return_offsets_mapping=True, verbose=False)
+    if len(enc["input_ids"]) <= budget:
+        return premise, False
+    return premise[: enc["offset_mapping"][budget - 1][1]], True
+
+
+MIN_PREMISE_TOKENS = 64
+
+
+def fit_claim(tokenizer, claim: str, max_length: int, min_premise: int = MIN_PREMISE_TOKENS) -> tuple[str, bool]:
+    """Cut a claim (question + answer) that would leave fewer than ``min_premise`` tokens for the premise.
+
+    Pair encoders truncate only the premise, so a claim longer than the whole window cannot be encoded at
+    all (a few PHANTOM / RAGTruth claims exceed 508 DeBERTa tokens). Such claims keep their beginning; callers
+    count and report every cut. Claims that fit are returned unchanged.
+    """
+    budget = max_length - min_premise - tokenizer.num_special_tokens_to_add(pair=True)
+    return fit_premise(tokenizer, claim, budget)
+
+
+def run_batched(
+    items: Sequence,
+    fn: Callable[[Sequence], np.ndarray],
+    batch_size: int,
+    lengths: Sequence[int] | None = None,
+    desc: str = "scoring",
+) -> np.ndarray:
+    """Apply ``fn`` to batches of ``items``, halving the batch size on CUDA OOM.
+
+    Items are processed in descending length order (less padding) and results are returned in the
+    original order. A batch that fails at batch size 1 raises ScoringError: no silent default scores.
+    """
+    n = len(items)
+    out = np.full(n, np.nan, dtype=float)
+    order = np.argsort(-np.asarray(lengths), kind="stable") if lengths is not None else np.arange(n)
+    i, bs = 0, max(1, batch_size)
+    t0, last_log = time.time(), time.time()
+    while i < n:
+        idx = order[i : i + bs]
+        try:
+            out[idx] = np.asarray(fn([items[j] for j in idx]), dtype=float)
+            i += len(idx)
+        except RuntimeError as e:  # torch.cuda.OutOfMemoryError subclasses RuntimeError
+            if "out of memory" not in str(e).lower():
+                raise
+            try:
+                import torch
+
+                torch.cuda.empty_cache()
+            except ImportError:
+                pass
+            if bs == 1:
+                raise ScoringError(f"{desc}: out of memory at batch size 1 (item length {lengths[idx[0]] if lengths is not None else '?'})") from e
+            bs = max(1, bs // 2)
+            logger.warning("%s: CUDA OOM, batch size -> %d", desc, bs)
+        if time.time() - last_log > 30:
+            rate = i / max(1e-9, time.time() - t0)
+            logger.info("%s: %d/%d pairs (%.1f pairs/s, batch %d)", desc, i, n, rate, bs)
+            last_log = time.time()
+    if np.isnan(out).any():
+        raise ScoringError(f"{desc}: {int(np.isnan(out).sum())} pairs produced NaN scores")
+    return out

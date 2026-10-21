@@ -1,0 +1,23 @@
+{
+  "hash": "898631cb7008",
+  "run": "modernbert_nli",
+  "slice": "phantom_grid_sub",
+  "strategy": "chunk-w1536-o1024-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "ModernBERT-base-nli",
+    "requires": "gpu",
+    "max_length": 2048,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 1536,
+    "overlap": 1024
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 16092.1,
+  "git_commit": "a7b3607",
+  "created": "2026-10-12T04:16:49"
+}

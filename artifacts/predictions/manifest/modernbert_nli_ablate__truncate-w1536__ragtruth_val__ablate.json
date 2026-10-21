@@ -1,0 +1,22 @@
+{
+  "hash": "3610a4e3b1e6",
+  "run": "modernbert_nli_ablate",
+  "slice": "ragtruth_val",
+  "strategy": "truncate-w1536",
+  "ablate": true,
+  "detector": {
+    "name": "ModernBERT-base-nli",
+    "requires": "gpu",
+    "max_length": 2048,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 1536
+  },
+  "rows": 2244,
+  "limit": null,
+  "elapsed_s": 10.0,
+  "git_commit": "53cac1b",
+  "created": "2026-10-12T09:42:46"
+}

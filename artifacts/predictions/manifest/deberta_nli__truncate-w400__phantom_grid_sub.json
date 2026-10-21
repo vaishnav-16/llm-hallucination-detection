@@ -1,0 +1,22 @@
+{
+  "hash": "5c29e5a30833",
+  "run": "deberta_nli",
+  "slice": "phantom_grid_sub",
+  "strategy": "truncate-w400",
+  "ablate": false,
+  "detector": {
+    "name": "DeBERTa-v3-base-mnli-fever-anli",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 32
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 400
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 670.7,
+  "git_commit": "933fd03",
+  "created": "2026-10-10T23:32:09"
+}

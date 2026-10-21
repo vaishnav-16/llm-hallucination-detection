@@ -1,0 +1,23 @@
+{
+  "hash": "24e7b8b3c54d",
+  "run": "deberta_nli",
+  "slice": "ragtruth_val",
+  "strategy": "chunk-w400-o128-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "DeBERTa-v3-base-mnli-fever-anli",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 1879
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 400,
+    "overlap": 128
+  },
+  "rows": 2244,
+  "limit": null,
+  "elapsed_s": 70.9,
+  "git_commit": "d6ff0c5",
+  "created": "2026-10-11T02:27:06"
+}

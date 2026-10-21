@@ -1,0 +1,23 @@
+{
+  "hash": "860242bb8549",
+  "run": "deberta_ft_s42",
+  "slice": "phantom_grid_sub",
+  "strategy": "chunk-w400-o128-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 4
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 400,
+    "overlap": 128
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 10340.7,
+  "git_commit": "d546c6f",
+  "created": "2026-10-14T04:44:56"
+}

@@ -1,0 +1,22 @@
+{
+  "hash": "a09fd97103cc",
+  "run": "deberta_nli",
+  "slice": "ragtruth_test",
+  "strategy": "truncate-w400",
+  "ablate": false,
+  "detector": {
+    "name": "DeBERTa-v3-base-mnli-fever-anli",
+    "requires": "gpu",
+    "max_length": 512,
+    "claims_truncated": 32
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 400
+  },
+  "rows": 2675,
+  "limit": null,
+  "elapsed_s": 39.5,
+  "git_commit": "933fd03",
+  "created": "2026-10-10T23:33:10"
+}

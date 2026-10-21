@@ -1,0 +1,23 @@
+{
+  "hash": "e7955921252f",
+  "run": "modernbert_ft_s42",
+  "slice": "phantom_grid_sub",
+  "strategy": "chunk-w7168-o2048-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 7168,
+    "overlap": 2048
+  },
+  "rows": 12800,
+  "limit": null,
+  "elapsed_s": 14293.1,
+  "git_commit": "f2b8043",
+  "created": "2026-10-14T00:13:08"
+}

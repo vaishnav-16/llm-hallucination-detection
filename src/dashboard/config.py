@@ -1,51 +1,55 @@
-"""Dashboard configuration — colors, labels, page settings."""
+"""Dashboard presentation settings: page config, colours and display names.
 
-# Page config
+Kept separate from the data layer so the look of the dashboard can change without touching
+how artifacts are read, and so the data helpers stay importable without Streamlit.
+"""
+
+from __future__ import annotations
+
 PAGE_TITLE = "FastHalluCheck"
 PAGE_ICON = "🔍"
 LAYOUT = "wide"
 
-# Color palette
+PAGES = ["Overview", "Results", "Length & position (PHANTOM)", "Comparisons & seeds", "Predictions"]
+
+RESEARCH_QUESTION = (
+    "How effective are pretrained hallucination detectors at identifying unsupported answers in "
+    "question-answering settings? Each detector scores (context, answer) pairs from HaluEval, RAGTruth "
+    "and the long-context financial PHANTOM benchmark; every number is measured on held-out test slices, "
+    "with decision thresholds chosen on the matching validation slice and 95% pair-clustered bootstrap CIs. "
+    "Answer-only baselines (which never see the context) show how much of a benchmark can be solved by "
+    "answer-style shortcuts alone."
+)
+
+SLIDER_NOTE = "exploration only; reported numbers use validation thresholds"
+
 COLORS = {
     "faithful": "#4A90D9",
     "hallucinated": "#E74C3C",
-    "model_hhem": "#4A90D9",
-    "model_deberta": "#E67E22",
-    "model_ensemble": "#27AE60",
-    "model_phantom": "#8E44AD",
-    "answer": "#27AE60",
-    "caveat": "#F1C40F",
-    "abstain": "#E74C3C",
-    "background": "#0E1117",
-    "card_bg": "#1E2130",
+    "baseline": "#7F8C8D",
+    "val_threshold": "#2C3E50",
+    "explore_threshold": "#F39C12",
+}
+BASELINE_DASH = {"answer_tfidf": "dash", "answer_length": "dot"}
+
+METRIC_NAMES = {
+    "auroc": "AUROC",
+    "auprc": "AUPRC",
+    "balanced_accuracy": "Balanced accuracy",
+    "accuracy": "Accuracy",
+    "precision": "Precision",
+    "recall": "Recall",
+    "f1": "F1",
+    "ece": "ECE (lower is better)",
 }
 
-# Model display names
-MODEL_NAMES = {
-    "hhem": "HHEM (Vectara)",
-    "finetuned": "Fine-tuned DeBERTa",
-    "ensemble_avg": "Ensemble (Average)",
-    "ensemble_weighted": "Ensemble (Weighted)",
-}
 
-# File paths
-PATHS = {
-    "hhem_predictions": "results/hhem_predictions.csv",
-    "hhem_predictions_optimized": "results/hhem_predictions_optimized.csv",
-    "finetuned_predictions": "results/finetuned_predictions.csv",
-    "phantom_hhem_predictions": "results/phantom_hhem_predictions.csv",
-    "phantom_finetuned_predictions": "results/phantom_finetuned_predictions.csv",
-    "phantom_trained_predictions": "results/phantom_trained_predictions.csv",
-    "metrics": "results/metrics.json",
-    "finetuned_metrics": "results/finetuned_metrics.json",
-    "phantom_metrics": "results/phantom_metrics.json",
-    "optimal_threshold_metrics": "results/optimal_threshold_metrics.json",
-    "ensemble_metrics": "results/ensemble_metrics.json",
-    "decision_policy_metrics": "results/decision_policy_metrics.json",
-    "error_analysis": "results/error_analysis.csv",
-    "comprehensive_error_analysis": "results/comprehensive_error_analysis.csv",
-    "hallucination_type_analysis": "results/hallucination_type_analysis.csv",
-    "halueval_normalized": "data/halueval_qa_normalized.csv",
-    "halueval_enriched": "data/halueval_enriched.csv",
-    "phantom_normalized": "data/phantom_normalized.csv",
-}
+def display_name(detector: str, strategy: str | None = None) -> str:
+    """Short human label for a detector (and optionally its context strategy)."""
+    if strategy is None or strategy in ("", "none"):
+        return detector
+    return f"{detector} · {strategy}"
+
+
+def metric_name(metric: str) -> str:
+    return METRIC_NAMES.get(metric, metric)

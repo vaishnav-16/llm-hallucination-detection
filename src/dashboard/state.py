@@ -1,108 +1,82 @@
-"""Session state management — centralized state for the Streamlit dashboard."""
+"""Cached access to the artifacts for the Streamlit pages.
 
-import os
-from typing import Optional
+The pure loaders live in ``src.dashboard.data``; this module only adds ``st.cache_data`` so that switching
+pages or widgets does not re-read CSV/parquet files. File modification times are part of each cache key,
+so re-running ``evaluate`` (which rewrites the artifacts) is picked up without restarting Streamlit.
+"""
+
+from __future__ import annotations
+
+from typing import Any
 
 import pandas as pd
 import streamlit as st
 
-from src.data.store import read_predictions, read_metrics
-from src.dashboard.config import PATHS
+from src.dashboard import data
 
 
-class SessionState:
-    """Centralized session state manager.
+@st.cache_data(show_spinner=False)
+def _metrics_long(root: str, mtime: float) -> pd.DataFrame:
+    return data.load_metrics_long(root)
 
-    Handles lazy loading, caching, and derived state invalidation.
-    """
 
-    @staticmethod
-    def _ensure_key(key: str, default=None):
-        if key not in st.session_state:
-            st.session_state[key] = default
+@st.cache_data(show_spinner=False)
+def _comparisons(root: str, mtime: float) -> pd.DataFrame:
+    return data.load_comparisons(root)
 
-    # --- Threshold ---
 
-    @staticmethod
-    def get_threshold() -> float:
-        SessionState._ensure_key("threshold", 0.5)
-        return st.session_state["threshold"]
+@st.cache_data(show_spinner=False)
+def _seed_summary(root: str, mtime: float) -> pd.DataFrame:
+    return data.load_seed_summary(root)
 
-    @staticmethod
-    def set_threshold(value: float):
-        if st.session_state.get("threshold") != value:
-            st.session_state["threshold"] = value
-            SessionState.invalidate_metrics()
 
-    @staticmethod
-    def invalidate_metrics():
-        """Clear cached derived metrics when inputs change."""
-        for key in list(st.session_state.keys()):
-            if key.startswith("_cached_metrics_"):
-                del st.session_state[key]
+@st.cache_data(show_spinner=False)
+def _runs(root: str, mtime: float) -> pd.DataFrame:
+    return data.list_runs(root)
 
-    # --- Data Loading (cached) ---
 
-    @staticmethod
-    @st.cache_data(ttl=3600)
-    def load_predictions(path: str) -> Optional[pd.DataFrame]:
-        """Load predictions from CSV with caching."""
-        if not os.path.exists(path):
-            return None
-        return pd.read_csv(path)
+@st.cache_data(show_spinner=False)
+def _manifests(root: str, mtime: float) -> dict[str, dict[str, Any]]:
+    return data.load_manifests(root)
 
-    @staticmethod
-    @st.cache_data(ttl=3600)
-    def load_metrics(path: str) -> dict:
-        """Load metrics from JSON with caching."""
-        return read_metrics(path)
 
-    # --- Convenience accessors ---
+@st.cache_data(show_spinner="Loading predictions...", max_entries=8)
+def _predictions(root: str, run_id: str, mtime: float) -> pd.DataFrame:
+    return data.load_predictions(run_id, root)
 
-    @staticmethod
-    def get_hhem_predictions() -> Optional[pd.DataFrame]:
-        return SessionState.load_predictions(PATHS["hhem_predictions"])
 
-    @staticmethod
-    def get_finetuned_predictions() -> Optional[pd.DataFrame]:
-        return SessionState.load_predictions(PATHS["finetuned_predictions"])
+@st.cache_data(show_spinner="Joining text from data/...", max_entries=16)
+def _text(rows: pd.DataFrame, slice_name: str) -> pd.DataFrame | None:
+    return data.attach_text(rows, slice_name)
 
-    @staticmethod
-    def get_phantom_predictions() -> Optional[pd.DataFrame]:
-        return SessionState.load_predictions(PATHS["phantom_hhem_predictions"])
 
-    @staticmethod
-    def get_baseline_metrics() -> dict:
-        return SessionState.load_metrics(PATHS["metrics"])
+def _root() -> str:
+    return str(data.artifacts_root())
 
-    @staticmethod
-    def get_finetuned_metrics() -> dict:
-        return SessionState.load_metrics(PATHS["finetuned_metrics"])
 
-    @staticmethod
-    def get_ensemble_metrics() -> dict:
-        return SessionState.load_metrics(PATHS["ensemble_metrics"])
+def metrics_long() -> pd.DataFrame:
+    return _metrics_long(_root(), data.file_mtime(data.metrics_dir() / "metrics_long.csv"))
 
-    @staticmethod
-    def get_optimal_threshold_metrics() -> dict:
-        return SessionState.load_metrics(PATHS["optimal_threshold_metrics"])
 
-    @staticmethod
-    def get_policy_metrics() -> dict:
-        return SessionState.load_metrics(PATHS["decision_policy_metrics"])
+def comparisons() -> pd.DataFrame:
+    return _comparisons(_root(), data.file_mtime(data.metrics_dir() / "comparisons.csv"))
 
-    @staticmethod
-    def get_error_analysis() -> Optional[pd.DataFrame]:
-        path = PATHS["comprehensive_error_analysis"]
-        if not os.path.exists(path):
-            path = PATHS["error_analysis"]
-        return SessionState.load_predictions(path)
 
-    @staticmethod
-    def get_hallucination_types() -> Optional[pd.DataFrame]:
-        return SessionState.load_predictions(PATHS["hallucination_type_analysis"])
+def seed_summary() -> pd.DataFrame:
+    return _seed_summary(_root(), data.file_mtime(data.metrics_dir() / "seed_summary.csv"))
 
-    @staticmethod
-    def get_available_data() -> dict:
-        """Check which data files are available."""
-        return {name: os.path.exists(path) for name, path in PATHS.items()}
+
+def runs() -> pd.DataFrame:
+    return _runs(_root(), data.file_mtime(data.predictions_dir()))
+
+
+def manifests() -> dict[str, dict[str, Any]]:
+    return _manifests(_root(), data.file_mtime(data.predictions_dir() / "manifest"))
+
+
+def predictions(run_id: str) -> pd.DataFrame:
+    return _predictions(_root(), run_id, data.file_mtime(data.predictions_dir() / f"{run_id}.parquet"))
+
+
+def text_for(rows: pd.DataFrame, slice_name: str) -> pd.DataFrame | None:
+    return _text(rows, slice_name)

@@ -1,0 +1,118 @@
+# TypeSafe Jev (jev-1.13.0, pinned) as a zero-shot hallucination detector. API only: runs in the cloud session or
+# on the laptop, no GPU. Needs TYPESAFE_API_KEY. Budget guard: stops before spend reaches max_usd (default $4.50,
+# for a $5 credit). Dry-run estimate for this file: ~$2.60 in total (truncate and jev_choice come from the cache).
+# Check the estimate first:
+#   python -m src.cli probe-jev
+#   python -m src.cli score --config configs/jev.yaml --dry-run
+#   python -m src.cli score --config configs/jev.yaml
+#
+# Windows are in ~4-character pieces (~0.9 tokens each on PHANTOM). Jev reads 32K tokens of state, so a
+# 16,000-piece window (~14K tokens, up to ~26K for the most token-dense text) is read natively in one request.
+# It was 20,000: the probe document came in at 0.74 tokens/piece, but dense 10-K windows reach 1.62 tokens/piece
+# (measured from cached usage), so a 20,000-piece window can reach ~32.4K tokens and Jev rejected one with
+# HTTP 400 max_tokens_exceeded (10-K 20000-beginning cell).
+#   truncate  = first window only: what Jev sees if you send it the document as-is (the 20K/30K cells overflow)
+#   chunk     = every window, answer is faithful if any window supports it (min p_halluc)
+#   retrieve  = BM25 top-2 windows of 1,500 pieces: Jev's own docs recommend filtering irrelevant state first
+#
+# jev_noul and jev_choice send byte-identical requests (both questions are in every request), so jev_choice is
+# served from the cache at no extra cost. The two answers of a pair share one request (questions are evaluated
+# independently; the document is billed once).
+name: jev
+runs:
+  - name: jev_noul
+    detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: &jev_strategies
+      - {strategy: truncate, window: 16000}
+      - {strategy: chunk, window: 16000, overlap: 2048}
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2}
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2, retriever: bm25_blockidf}
+    slices: &jev_slices
+      - {name: phantom_grid_sub, max_pairs: 60}     # 60 pairs x 32 cells; keeps the whole config near $2.60
+      - {name: phantom_val, max_pairs: 150}
+      - {name: ragtruth_test, max_pairs: 150}
+      - {name: ragtruth_val, max_pairs: 100}
+      - {name: halueval_test, max_pairs: 500}
+      - {name: halueval_val, max_pairs: 300}
+
+  - name: jev_choice
+    detector: {type: jev, answer: choice, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_strategies
+    slices: *jev_slices
+
+  # Shortcut control: the same questions with an empty document. If Jev still separates the classes, it is
+  # reading the answer's style, not checking it against the document.
+  - name: jev_noul_ablate
+    detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: [{strategy: truncate, window: 16000}]
+    ablate_context: true
+    slices:
+      - {name: phantom_seed_test, max_pairs: 150}
+      - {name: phantom_val, max_pairs: 150}
+      - {name: ragtruth_test, max_pairs: 150}
+      - {name: ragtruth_val, max_pairs: 100}
+      - {name: halueval_test, max_pairs: 500}
+      - {name: halueval_val, max_pairs: 300}
+
+  # v1 on the encoders' full 200-pair PHANTOM grid, with the cheapest strategy that matches chunk on the 60-pair
+  # sample (block-IDF retrieve: 0.968 vs chunk 0.969 AUROC). Same rows as the encoders and answer-only baselines,
+  # so paired comparisons get ~3x the pairs. The first 60 pairs are served from the cache; jev_choice_full is free.
+  - name: jev_noul_full
+    detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: &jev_full_strategies
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2, retriever: bm25_blockidf}
+    slices: [phantom_grid_sub]
+  - name: jev_choice_full
+    detector: {type: jev, answer: choice, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_full_strategies
+    slices: [phantom_grid_sub]
+
+  # Empty-document control on the same 200-pair grid rows as jev_noul_full, so "how much of Jev's AUROC survives
+  # without the document" is measured on exactly the rows of the headline result. With no document every cell
+  # asks the seed's questions again (10-K long cells reuse the seed answers), so most requests repeat.
+  - name: jev_noul_ablate_full
+    detector: {type: jev, answer: noul, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: [{strategy: truncate, window: 16000}]
+    ablate_context: true
+    slices: [phantom_grid_sub]
+
+  # v2 question set (src/detectors/jev.py): atomic per-claim questions (support, numbers, entities, extra) plus the
+  # Choice asked in both option orders, following TypeSafe's jev-1.13 guidance. All five runs send identical
+  # requests, so only the first one is paid ($0.11 for the validation slices).
+  # Validation-only pilot: v2 had to beat v1 on the validation slices before any test slice was scored. It did not
+  # (artifacts/jev_v2_pilot.json: out-of-fold v2 stack vs v1 noul AUROC +0.013 HaluEval, +0.004 PHANTOM, -0.012
+  # RAGTruth; reversing the Choice options changed nothing), so the test slices were not run and v1 stays the
+  # reported Jev configuration.
+  - name: jev_v2_support
+    detector: {type: jev, questions: v2, answer: support, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: &jev_v2_strategies
+      - {strategy: retrieve, window: 1500, overlap: 750, top_k: 2, retriever: bm25_blockidf}
+    slices: &jev_val_slices
+      - {name: phantom_val, max_pairs: 150}
+      - {name: ragtruth_val, max_pairs: 100}
+      - {name: halueval_val, max_pairs: 300}
+  - name: jev_v2_numbers
+    detector: {type: jev, questions: v2, answer: numbers, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_v2_strategies
+    slices: *jev_val_slices
+  - name: jev_v2_entities
+    detector: {type: jev, questions: v2, answer: entities, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_v2_strategies
+    slices: *jev_val_slices
+  - name: jev_v2_extra
+    detector: {type: jev, questions: v2, answer: extra, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_v2_strategies
+    slices: *jev_val_slices
+  - name: jev_v2_choice2
+    detector: {type: jev, questions: v2, answer: choice2, model: jev-1.13.0, max_usd: 4.5, concurrency: 6}
+    strategies: *jev_v2_strategies
+    slices: *jev_val_slices
+
+# `python -m src.cli stack --config configs/jev.yaml` (after score): logistic regression over the v2 answers, fitted
+# on the validation slices only (out-of-fold there), applied unchanged to any test slice the members were scored on
+# (none, since the pilot did not pass). See src/eval/stack.py.
+stacks:
+  - name: jev_v2_stack
+    strategy: retrieve-w1500-o750-min_phalluc-k2-bidf
+    members: [jev_v2_support, jev_v2_numbers, jev_v2_entities, jev_v2_extra, jev_v2_choice2]
+    fit_slices: [phantom_val, ragtruth_val, halueval_val]

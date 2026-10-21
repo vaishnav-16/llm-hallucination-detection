@@ -1,0 +1,31 @@
+{
+  "hash": "0881fde0c4c7",
+  "run": "jev_choice",
+  "slice": "ragtruth_val",
+  "strategy": "retrieve-w1500-o750-min_phalluc-k2-bidf",
+  "ablate": false,
+  "detector": {
+    "name": "jev_choice",
+    "requires": "api",
+    "max_length": 28000,
+    "model_requested": "jev-1.13.0",
+    "models_served": [],
+    "answer": "choice",
+    "questions": "v1",
+    "session_input_tokens": 0,
+    "session_usd": 0.0,
+    "premises_shrunk": 0
+  },
+  "spec": {
+    "strategy": "retrieve",
+    "window": 1500,
+    "overlap": 750,
+    "top_k": 2,
+    "retriever": "bm25_blockidf"
+  },
+  "rows": 605,
+  "limit": 100,
+  "elapsed_s": 0.9,
+  "git_commit": "6f2ae57",
+  "created": "2026-10-11T12:43:56"
+}

@@ -1,0 +1,22 @@
+{
+  "hash": "7cfe0e6d6377",
+  "run": "modernbert_answeronly_s42",
+  "slice": "phantom_val",
+  "strategy": "truncate-w7168",
+  "ablate": true,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 7168
+  },
+  "rows": 296,
+  "limit": null,
+  "elapsed_s": 0.9,
+  "git_commit": "cd401b1",
+  "created": "2026-10-15T01:26:07"
+}

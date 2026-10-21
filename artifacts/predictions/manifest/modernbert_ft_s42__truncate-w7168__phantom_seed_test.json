@@ -1,0 +1,22 @@
+{
+  "hash": "a0a849be03ec",
+  "run": "modernbert_ft_s42",
+  "slice": "phantom_seed_test",
+  "strategy": "truncate-w7168",
+  "ablate": false,
+  "detector": {
+    "name": "seed42",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 7168
+  },
+  "rows": 1982,
+  "limit": null,
+  "elapsed_s": 31.1,
+  "git_commit": "b5a47ec",
+  "created": "2026-10-21T00:30:22"
+}

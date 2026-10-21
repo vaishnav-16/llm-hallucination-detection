@@ -1,78 +1,55 @@
-"""Publish fine-tuned FastHalluCheck models to the Hugging Face Hub.
+"""Publish fine-tuned checkpoints from models/<name>/seed<k>/ to the Hugging Face Hub.
 
-Owner-side utility — run once after fine-tuning to share weights with
-collaborators so they can skip the ~15-minute training step.
+Every checkpoint written by `python -m src.cli finetune` is uploaded as
+``<username>/fasthallucheck-<name>-seed<k>``, together with its fhc_meta.json (base model revision,
+training config, validation metrics). Collaborators can then score without retraining by pointing a
+scoring config's ``model:`` at the Hub id.
 
 Usage:
-    huggingface-cli login                                    # one-time auth
-    python scripts/upload_models.py --username <HF_USERNAME>
-    python scripts/upload_models.py --username <HF_USERNAME> --model halueval
+    huggingface-cli login                                         # one-time auth (token with write access)
+    python scripts/upload_models.py --username <HF_USERNAME>                  # every checkpoint found
+    python scripts/upload_models.py --username <HF_USERNAME> --only modernbert-nli-ft
 """
+
+from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
 
-from huggingface_hub import HfApi, create_repo
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
-MODELS = {
-    "halueval": {
-        "local_path": PROJECT_ROOT / "models" / "deberta-hallucination-detector",
-        "repo_suffix": "fasthallucheck-deberta-halueval",
-    },
-    "phantom": {
-        "local_path": PROJECT_ROOT / "models" / "deberta-phantom-finetuned",
-        "repo_suffix": "fasthallucheck-deberta-phantom",
-    },
-}
-
-IGNORE_PATTERNS = ["checkpoint-*", "training_args.bin"]
+MODELS_DIR = PROJECT_ROOT / "models"
+IGNORE_PATTERNS = ["checkpoints/*", "checkpoint-*", "training_args.bin"]
 
 
-def upload(model_key: str, username: str) -> None:
-    cfg = MODELS[model_key]
-    local_path = cfg["local_path"]
-    repo_id = f"{username}/{cfg['repo_suffix']}"
+def find_checkpoints(only: list[str] | None) -> list[Path]:
+    dirs = sorted(p.parent for p in MODELS_DIR.glob("*/seed*/config.json"))
+    return [d for d in dirs if not only or d.parent.name in only]
 
-    if not local_path.exists():
-        print(f"[skip] {model_key}: {local_path} does not exist")
-        return
 
-    print(f"[{model_key}] creating repo {repo_id}")
-    create_repo(repo_id, exist_ok=True)
+def upload(ckpt: Path, username: str, private: bool) -> str:
+    from huggingface_hub import HfApi, create_repo
 
-    print(f"[{model_key}] uploading {local_path} -> {repo_id}")
-    api = HfApi()
-    api.upload_folder(
-        folder_path=str(local_path),
-        repo_id=repo_id,
-        ignore_patterns=IGNORE_PATTERNS,
-        commit_message="Upload FastHalluCheck fine-tuned DeBERTa",
-    )
-    print(f"[{model_key}] done -> https://huggingface.co/{repo_id}")
+    repo_id = f"{username}/fasthallucheck-{ckpt.parent.name}-{ckpt.name}"
+    create_repo(repo_id, exist_ok=True, private=private)
+    HfApi().upload_folder(folder_path=str(ckpt), repo_id=repo_id, ignore_patterns=IGNORE_PATTERNS,
+                          commit_message=f"Upload {ckpt.parent.name}/{ckpt.name}")
+    print(f"uploaded {ckpt.relative_to(PROJECT_ROOT)} -> https://huggingface.co/{repo_id}")
+    return repo_id
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--username", required=True, help="Hugging Face Hub username")
-    parser.add_argument(
-        "--model",
-        choices=["halueval", "phantom", "both"],
-        default="both",
-        help="Which fine-tuned model to upload (default: both)",
-    )
+    parser.add_argument("--username", required=True, help="Hugging Face Hub username or organisation")
+    parser.add_argument("--only", nargs="*", default=None, help="model names under models/ to upload")
+    parser.add_argument("--private", action="store_true", help="create private repos")
     args = parser.parse_args()
-
-    keys = ["halueval", "phantom"] if args.model == "both" else [args.model]
-    missing = [k for k in keys if not MODELS[k]["local_path"].exists()]
-    if missing:
-        print(f"error: missing model folders: {missing}", file=sys.stderr)
-        print("Run `python run_all.py` first to fine-tune the models.", file=sys.stderr)
+    ckpts = find_checkpoints(args.only)
+    if not ckpts:
+        print("error: no checkpoints under models/*/seed*/ — run `python -m src.cli finetune ...` first", file=sys.stderr)
         return 1
-
-    for k in keys:
-        upload(k, args.username)
+    for c in ckpts:
+        upload(c, args.username, args.private)
     return 0
 
 

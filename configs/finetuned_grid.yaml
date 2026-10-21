@@ -1,0 +1,67 @@
+# Score the fine-tuned checkpoints (local paths under models/, or HF Hub ids after upload).
+# Run on the RTX 4070 after the finetune stage:
+#   python -m src.cli score --config configs/finetuned_grid.yaml --device cuda
+# The 8K window with 2,048 overlap contains every measured seed passage (max ~1,650 tokens) whole.
+name: finetuned_grid
+runs:
+  - name: modernbert_ft_s42
+    detector: {type: seqcls, model: models/modernbert-nli-ft/seed42, output: binary, max_length: 8192, batch_size: 4}
+    strategies:
+      - {strategy: truncate, window: 7168}
+      - {strategy: chunk, window: 7168, overlap: 2048}
+      - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 2, retriever: bm25_blockidf}
+    slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
+
+  # Not run for the reported results: phantom_grid_sub already covers every PHANTOM cell, and the full grid would cost
+  # many GPU hours. Uncomment to score the headline detector on every PHANTOM test row.
+  # - name: modernbert_ft_s42_full
+  #   detector: {type: seqcls, model: models/modernbert-nli-ft/seed42, output: binary, max_length: 8192, batch_size: 4}
+  #   strategies: [{strategy: chunk, window: 7168, overlap: 2048}]
+  #   slices: [phantom_grid_full]
+
+  - name: modernbert_ft_s43   # seed variation on the short slices only (long PHANTOM is matched by the answer-only control)
+    detector: {type: seqcls, model: models/modernbert-nli-ft/seed43, output: binary, max_length: 8192, batch_size: 4}
+    strategies: [{strategy: chunk, window: 7168, overlap: 2048}]
+    slices: [phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_ft_s44   # seed variation on the short slices only (long PHANTOM is matched by the answer-only control)
+    detector: {type: seqcls, model: models/modernbert-nli-ft/seed44, output: binary, max_length: 8192, batch_size: 4}
+    strategies: [{strategy: chunk, window: 7168, overlap: 2048}]
+    slices: [phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_ft_s42_ablate  # shortcut control: does the fine-tuned model use the context at all?
+    detector: {type: seqcls, model: models/modernbert-nli-ft/seed42, output: binary, max_length: 8192, batch_size: 16}
+    strategies: [{strategy: truncate, window: 7168}]
+    ablate_context: true
+    slices: [phantom_seed_test, phantom_val, halueval_norm_test, ragtruth_test, ragtruth_val]
+
+  - name: deberta_ft_s42
+    detector: {type: seqcls, model: models/deberta-nli-ft/seed42, output: binary, max_length: 512, batch_size: 32}
+    strategies:
+      - {strategy: truncate, window: 400}
+      - {strategy: chunk, window: 400, overlap: 128}
+    slices: [phantom_grid_sub, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_answeronly_s42  # answer-only fine-tuned control (configs/finetune_modernbert_answeronly.yaml)
+    detector: {type: seqcls, model: models/modernbert-answeronly-ft/seed42, output: binary, max_length: 8192, batch_size: 16}
+    strategies: [{strategy: truncate, window: 7168}]
+    ablate_context: true
+    slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_answeronly_s43
+    detector: {type: seqcls, model: models/modernbert-answeronly-ft/seed43, output: binary, max_length: 8192, batch_size: 16}
+    strategies: [{strategy: truncate, window: 7168}]
+    ablate_context: true
+    slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_answeronly_s44
+    detector: {type: seqcls, model: models/modernbert-answeronly-ft/seed44, output: binary, max_length: 8192, batch_size: 16}
+    strategies: [{strategy: truncate, window: 7168}]
+    ablate_context: true
+    slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: deberta_ft_s42_ablate    # shortcut control for DeBERTa, same slices as modernbert_ft_s42_ablate
+    detector: {type: seqcls, model: models/deberta-nli-ft/seed42, output: binary, max_length: 512, batch_size: 32}
+    strategies: [{strategy: truncate, window: 400}]
+    ablate_context: true
+    slices: [phantom_seed_test, phantom_val, halueval_norm_test, ragtruth_test, ragtruth_val]

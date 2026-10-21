@@ -1,0 +1,21 @@
+# Main contribution: ModernBERT-base from the tasksource NLI checkpoint, positions extended to 8K (RoPE),
+# trained at 4K tokens with distractor augmentation. Validation-only model selection. 3 seeds.
+# Run on the RTX 4070:  python -m src.cli finetune --config configs/finetune_modernbert.yaml --device cuda
+# Rough time: 1-2 h per seed. Smoke first:  ... --seeds 42 --max-steps 20
+name: modernbert-nli-ft
+base_model: modernbert_nli
+extend_positions: 8192
+max_length: 4096
+hypothesis: qa
+# Original HaluEval answers teach the length shortcut, so only the normalized variant is used (skipped if absent).
+train_slices: [ragtruth_train, phantom_train, halueval_norm_train]
+val_slices: [ragtruth_val, phantom_val, halueval_norm_val]
+oversample: {phantom: 3}          # PHANTOM train is small (~1.7K rows) next to RAGTruth (~12.7K)
+augment: {fraction: 0.5, target_tokens: [2000, 3500]}
+epochs: 2
+batch_size: 2
+eval_batch_size: 4
+grad_accum: 8
+learning_rate: 3.0e-5
+warmup_ratio: 0.1
+seeds: [42, 43, 44]
