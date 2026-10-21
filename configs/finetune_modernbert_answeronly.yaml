@@ -18,4 +18,4 @@ eval_batch_size: 4
 grad_accum: 8
 learning_rate: 3.0e-5
 warmup_ratio: 0.1
-seeds: [42]
+seeds: [42, 43, 44]

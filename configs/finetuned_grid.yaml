@@ -10,22 +10,22 @@ runs:
       - {strategy: truncate, window: 7168}
       - {strategy: chunk, window: 7168, overlap: 2048}
       - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 2, retriever: bm25_blockidf}
-    slices: [phantom_grid_sub, phantom_val, halueval_norm_test, halueval_norm_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
+    slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
 
   - name: modernbert_ft_s42_full    # headline detector on every PHANTOM test row
     detector: {type: seqcls, model: models/modernbert-nli-ft/seed42, output: binary, max_length: 8192, batch_size: 4}
     strategies: [{strategy: chunk, window: 7168, overlap: 2048}]
     slices: [phantom_grid_full]
 
-  - name: modernbert_ft_s43
+  - name: modernbert_ft_s43   # seed variation on the short slices only (long PHANTOM is matched by the answer-only control)
     detector: {type: seqcls, model: models/modernbert-nli-ft/seed43, output: binary, max_length: 8192, batch_size: 4}
     strategies: [{strategy: chunk, window: 7168, overlap: 2048}]
-    slices: [phantom_grid_sub, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+    slices: [phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
 
-  - name: modernbert_ft_s44
+  - name: modernbert_ft_s44   # seed variation on the short slices only (long PHANTOM is matched by the answer-only control)
     detector: {type: seqcls, model: models/modernbert-nli-ft/seed44, output: binary, max_length: 8192, batch_size: 4}
     strategies: [{strategy: chunk, window: 7168, overlap: 2048}]
-    slices: [phantom_grid_sub, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+    slices: [phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
 
   - name: modernbert_ft_s42_ablate  # shortcut control: does the fine-tuned model use the context at all?
     detector: {type: seqcls, model: models/modernbert-nli-ft/seed42, output: binary, max_length: 8192, batch_size: 16}
@@ -42,6 +42,18 @@ runs:
 
   - name: modernbert_answeronly_s42  # answer-only fine-tuned control (configs/finetune_modernbert_answeronly.yaml)
     detector: {type: seqcls, model: models/modernbert-answeronly-ft/seed42, output: binary, max_length: 8192, batch_size: 16}
+    strategies: [{strategy: truncate, window: 7168}]
+    ablate_context: true
+    slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_answeronly_s43
+    detector: {type: seqcls, model: models/modernbert-answeronly-ft/seed43, output: binary, max_length: 8192, batch_size: 16}
+    strategies: [{strategy: truncate, window: 7168}]
+    ablate_context: true
+    slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
+
+  - name: modernbert_answeronly_s44
+    detector: {type: seqcls, model: models/modernbert-answeronly-ft/seed44, output: binary, max_length: 8192, batch_size: 16}
     strategies: [{strategy: truncate, window: 7168}]
     ablate_context: true
     slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, ragtruth_test, ragtruth_val]
