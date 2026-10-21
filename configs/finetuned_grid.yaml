@@ -12,10 +12,12 @@ runs:
       - {strategy: retrieve, window: 2048, overlap: 1024, top_k: 2, retriever: bm25_blockidf}
     slices: [phantom_grid_sub, phantom_seed_test, phantom_val, halueval_norm_test, halueval_norm_val, halueval_test, halueval_val, ragtruth_test, ragtruth_val]
 
-  - name: modernbert_ft_s42_full    # headline detector on every PHANTOM test row
-    detector: {type: seqcls, model: models/modernbert-nli-ft/seed42, output: binary, max_length: 8192, batch_size: 4}
-    strategies: [{strategy: chunk, window: 7168, overlap: 2048}]
-    slices: [phantom_grid_full]
+  # Not run for the reported results: phantom_grid_sub already covers every PHANTOM cell, and the full grid would cost
+  # many GPU hours. Uncomment to score the headline detector on every PHANTOM test row.
+  # - name: modernbert_ft_s42_full
+  #   detector: {type: seqcls, model: models/modernbert-nli-ft/seed42, output: binary, max_length: 8192, batch_size: 4}
+  #   strategies: [{strategy: chunk, window: 7168, overlap: 2048}]
+  #   slices: [phantom_grid_full]
 
   - name: modernbert_ft_s43   # seed variation on the short slices only (long PHANTOM is matched by the answer-only control)
     detector: {type: seqcls, model: models/modernbert-nli-ft/seed43, output: binary, max_length: 8192, batch_size: 4}

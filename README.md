@@ -21,6 +21,33 @@ solved without reading the context:
 
 (`artifacts/metrics/shortcut_baselines.csv`, `metrics_long.csv`; reproduce with `python -m src.cli baselines && python -m src.cli evaluate`.)
 
+## Key findings
+
+All numbers are test AUROC from `artifacts/metrics/` with pair-clustered 95% CIs; the full write-up, tables and
+figures are in [`report/final_report.md`](report/final_report.md).
+
+1. **Truncation breaks at long context; chunking fixes it.** Reading only the first window loses up to 0.353 AUROC
+   between the ~500-token seed passage and 30K tokens (TypeSafe Jev: 0.975 to 0.623). Rereading the whole document in
+   overlapping chunks or retrieved windows beats truncation at 30K for 17 of 17 detector/strategy pairs, and chunking
+   stays within -0.151 to +0.006 of each detector's seed-length score.
+2. **Evidence position barely matters once every window is read.** Under chunking the largest gap between
+   beginning, middle and end is 0.069 AUROC.
+3. **PHANTOM can be solved without reading the filing.** ModernBERT fine-tuned on question + answer only (context
+   blanked) reaches 0.993 on PHANTOM (0.991 +/- 0.002 over 3 seeds). The context-reading fine-tuned detectors score
+   0.991-0.998 but differ from that control by only -0.129 to +0.017. On RAGTruth and rewritten HaluEval they beat it
+   by +0.053 to +0.122, so there they do use the evidence.
+4. **Of the zero-shot detectors, only TypeSafe Jev clears the answer-only line on PHANTOM's hard subset**
+   (0.975 / 0.972 vs TF-IDF 0.888). HHEM, LettuceDetect and the NLI encoders do not.
+5. **Zero-shot detectors do read the evidence.** On long documents where the evidence provably lies outside the
+   truncation window, they fall to 0.40-0.68.
+6. **Results are stable across training seeds**: seed sd is at most 0.006 AUROC.
+
+Takeaway: chunked verification solves the length problem, but high scores on PHANTOM do not show grounding unless
+they beat an answer-only model trained the same way.
+
+Fine-tuned weights (public): `vaishnav-16/fasthallucheck-{modernbert-nli-ft,deberta-nli-ft,modernbert-answeronly-ft}-seed{42,43,44}`
+on the Hugging Face Hub (DeBERTa: seed 42 only). Dashboard: `streamlit run app.py`.
+
 ## Team
 
 Vaishnav Ajai, Kritesh Singh and Prajwal Prasad, Dartmouth College, Thayer School of Engineering.
@@ -61,8 +88,9 @@ HaluEval, and a cross-domain drop on PHANTOM. An audit found that these numbers 
 | Shortcut controls | answer-length LR, answer TF-IDF LR, lexical support; context ablation of each model |
 | Zero-shot encoders | Vectara HHEM-2.1-open; `tasksource/ModernBERT-base-nli`; `MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`; LettuceDetect (ModernBERT) |
 | Fine-tuned (main) | ModernBERT-base from the NLI checkpoint, positions extended to 8K, distractor augmentation, 3 seeds; DeBERTa-v3-base NLI (512-token comparison) |
+| Fine-tuned answer-only control | the same ModernBERT recipe with every context blanked, 3 seeds |
 | Decision model (API) | **TypeSafe Jev** (`jev-1.13.0`): a System One model that returns calibrated probabilities instead of text. Each claim is asked as a yes/no *noul* ("is every detail supported by the document?") and as a 3-way *choice* (supported / contradicted / unsupported) |
-| LLM judges | Qwen3-4B-Instruct-2507 (4-bit, laptop), Qwen3-8B (Kaggle); API: Dartmouth Chat, Gemini (secondary) |
+| LLM judges (configured, not run for the reported results) | Qwen3-4B-Instruct-2507 (4-bit, laptop), Qwen3-8B (Kaggle); API: Dartmouth Chat, Gemini (secondary) |
 
 ## Quick start
 
