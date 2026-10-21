@@ -1,0 +1,22 @@
+{
+  "hash": "4dc4c085fecd",
+  "run": "modernbert_answeronly_s44",
+  "slice": "phantom_seed_test",
+  "strategy": "truncate-w7168",
+  "ablate": true,
+  "detector": {
+    "name": "seed44",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 7168
+  },
+  "rows": 1982,
+  "limit": null,
+  "elapsed_s": 4.8,
+  "git_commit": "7a8e8b8",
+  "created": "2026-10-21T00:33:23"
+}

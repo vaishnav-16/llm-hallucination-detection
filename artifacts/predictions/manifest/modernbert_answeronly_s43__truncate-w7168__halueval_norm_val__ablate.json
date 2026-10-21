@@ -1,0 +1,22 @@
+{
+  "hash": "ca56943b5ae5",
+  "run": "modernbert_answeronly_s43",
+  "slice": "halueval_norm_val",
+  "strategy": "truncate-w7168",
+  "ablate": true,
+  "detector": {
+    "name": "seed43",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 7168
+  },
+  "rows": 2948,
+  "limit": null,
+  "elapsed_s": 4.8,
+  "git_commit": "7a8e8b8",
+  "created": "2026-10-21T00:32:21"
+}

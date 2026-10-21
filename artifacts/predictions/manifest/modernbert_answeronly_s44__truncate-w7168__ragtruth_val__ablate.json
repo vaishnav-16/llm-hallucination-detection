@@ -1,0 +1,22 @@
+{
+  "hash": "89bb4b5d7c32",
+  "run": "modernbert_answeronly_s44",
+  "slice": "ragtruth_val",
+  "strategy": "truncate-w7168",
+  "ablate": true,
+  "detector": {
+    "name": "seed44",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "truncate",
+    "window": 7168
+  },
+  "rows": 2244,
+  "limit": null,
+  "elapsed_s": 8.6,
+  "git_commit": "7a8e8b8",
+  "created": "2026-10-21T00:33:52"
+}
