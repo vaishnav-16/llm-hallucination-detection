@@ -334,9 +334,18 @@ def discussion(long: pd.DataFrame, comp: pd.DataFrame, seeds: pd.DataFrame) -> s
         s = seeds[(seeds["metric"] == "auroc")]
         s = s.assign(value=s.apply(lambda r: f"{r['mean']:.3f} +/- {r['sd']:.3f} (n={int(r['n_seeds'])})", axis=1))
         s = s[["base", "strategy", "slice", "group", "value"]]
+        # Seed-mean gap between the fine-tuned detector and the answer-only control on the slices both were seeded on.
+        ft, ctl = (seeds[(seeds["metric"] == "auroc") & (seeds["base"] == b)].set_index(["slice", "group"])
+                   for b in ("modernbert_ft", ANSWER_ONLY_CONTROL.rsplit("_s", 1)[0]))
+        both = ft.index.intersection(ctl.index)
+        gaps = [(f"{sl} {g}", ft.loc[(sl, g), "mean"] - ctl.loc[(sl, g), "mean"],
+                 max(ft.loc[(sl, g), "sd"], ctl.loc[(sl, g), "sd"])) for sl, g in both]
+        gap_txt = ("Seed-mean gap, fine-tuned ModernBERT minus the answer-only control: "
+                   + ", ".join(f"{n} {d:+.3f} (larger seed sd {sd:.3f})" for n, d, sd in gaps) + ". " if gaps else "")
         out.append("### 7. Seed variation\n\nMean +/- sd over training seeds:\n\n" + _md_table(s) + "\n\n"
-                   f"The largest seed sd is {seeds.loc[seeds['metric'] == 'auroc', 'sd'].max():.3f} AUROC, so differences "
-                   "between models in sections 2 and 5 that are larger than that are not seed noise.\n")
+                   f"The largest seed sd is {seeds.loc[seeds['metric'] == 'auroc', 'sd'].max():.3f} AUROC. " + gap_txt
+                   + "With 3 seeds the sd is a rough estimate, so it only rules out seed noise as the cause of gaps several times "
+                   "larger than it. The long-context PHANTOM grid has one fine-tuned seed (42), so the fine-tuned results in sections 3-6 rest on that seed.\n")
     else:
         out.append("### 7. Seed variation\n\nOnly one training seed (42) is available, so there is no seed-variation estimate. "
                    "The CIs above cover test-sample variation, not training variation.\n")

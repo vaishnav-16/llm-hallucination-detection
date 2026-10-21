@@ -45,6 +45,20 @@ def test_discussion_renders_from_metrics_and_quotes_them():
     assert "inverted" in text  # 0.244 < 0.5 is called out, not hidden
 
 
+def test_discussion_seed_section_reports_gap_to_control():
+    long = pd.DataFrame([_m("answer_tfidf", "none", "phantom_grid_full", "all", 0.957)])
+    empty = pd.DataFrame(columns=["detector", "slice", "a", "b", "group", "n", "metric", "diff", "ci_lo", "ci_hi", "p_value"])
+    seeds = pd.DataFrame([
+        {"base": "modernbert_ft", "strategy": "chunk-w7168-o2048-min_phalluc", "slice": "ragtruth_test", "group": "all",
+         "metric": "auroc", "n_seeds": 3, "mean": 0.895, "sd": 0.003},
+        {"base": "modernbert_answeronly", "strategy": "truncate-w7168__ablate", "slice": "ragtruth_test", "group": "all",
+         "metric": "auroc", "n_seeds": 3, "mean": 0.814, "sd": 0.002},
+    ])
+    text = discussion(long, empty, seeds)
+    assert "ragtruth_test all +0.081 (larger seed sd 0.003)" in text
+    assert "Only one training seed" not in text
+
+
 def test_discussion_with_no_comparisons_or_seeds_still_renders():
     long = pd.DataFrame([_m("answer_tfidf", "none", "phantom_grid_full", "all", 0.957)])
     empty = pd.DataFrame(columns=["detector", "slice", "a", "b", "group", "n", "metric", "diff", "ci_lo", "ci_hi", "p_value"])

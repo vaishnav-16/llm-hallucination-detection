@@ -1,6 +1,6 @@
 # Length-robust hallucination detection on PHANTOM, RAGTruth and HaluEval
 
-_Generated 2026-10-20 by `python -m src.cli report` from the committed `artifacts/`._
+_Generated 2026-10-21 by `python -m src.cli report` from the committed `artifacts/`._
 
 **Pipeline status.** Done: prepare, baselines, rewrite-halueval, score-smoke, score-zeroshot, probe-jev, judge-jev, finetune, evaluate, report. Pending: probe-api, judges-api, score-finetuned, judge-local. Sections that depend on pending stages say so explicitly.
 
@@ -63,10 +63,14 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | lettucedetect | truncate-w3584 | nan | 0.823 [0.808, 0.837] | nan | nan | 0.641 [0.628, 0.655] | 0.649 [0.631, 0.668] | nan | nan | 0.883 [0.866, 0.898] |
 | lexical_support | full_context | 0.672 [0.659, 0.684] | 0.895 [0.881, 0.907] | 0.836 [0.819, 0.852] | 0.814 [0.796, 0.832] | nan | nan | nan | nan | 0.783 [0.764, 0.803] |
 | modernbert_answeronly_s42 | truncate-w7168__ablate | 0.850 [0.836, 0.863] | nan | nan | nan | 0.993 [0.989, 0.997] | 0.975 [0.957, 0.991] | 0.992 [0.988, 0.995] | 0.971 [0.960, 0.982] | 0.811 [0.791, 0.830] |
-| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | 0.963 [0.956, 0.969] | 0.936 [0.927, 0.945] | nan | nan | 0.991 [0.988, 0.994] | 0.968 [0.957, 0.978] | nan | nan | 0.896 [0.883, 0.909] |
-| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | 0.963 [0.956, 0.969] | 0.936 [0.927, 0.945] | nan | nan | 0.998 [0.996, 1.000] | 0.992 [0.985, 0.998] | nan | nan | 0.896 [0.883, 0.909] |
-| modernbert_ft_s42 | truncate-w7168 | 0.963 [0.956, 0.969] | 0.936 [0.927, 0.945] | nan | nan | 0.981 [0.976, 0.986] | 0.930 [0.916, 0.944] | nan | nan | 0.896 [0.883, 0.909] |
+| modernbert_answeronly_s43 | truncate-w7168__ablate | 0.856 [0.843, 0.868] | nan | nan | nan | 0.991 [0.986, 0.995] | 0.968 [0.950, 0.983] | 0.992 [0.989, 0.994] | 0.970 [0.957, 0.980] | 0.815 [0.795, 0.833] |
+| modernbert_answeronly_s44 | truncate-w7168__ablate | 0.856 [0.843, 0.868] | nan | nan | nan | 0.990 [0.984, 0.994] | 0.964 [0.944, 0.980] | 0.992 [0.989, 0.995] | 0.972 [0.961, 0.981] | 0.815 [0.796, 0.833] |
+| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | 0.963 [0.956, 0.969] | 0.936 [0.927, 0.945] | nan | nan | 0.991 [0.988, 0.994] | 0.968 [0.957, 0.978] | 0.999 [0.999, 1.000] | 0.999 [0.997, 0.999] | 0.896 [0.883, 0.909] |
+| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | 0.963 [0.956, 0.969] | 0.936 [0.927, 0.945] | nan | nan | 0.998 [0.996, 1.000] | 0.992 [0.985, 0.998] | 0.999 [0.999, 1.000] | 0.999 [0.997, 0.999] | 0.896 [0.883, 0.909] |
+| modernbert_ft_s42 | truncate-w7168 | 0.963 [0.956, 0.969] | 0.936 [0.927, 0.945] | nan | nan | 0.981 [0.976, 0.986] | 0.930 [0.916, 0.944] | 0.999 [0.999, 1.000] | 0.999 [0.997, 0.999] | 0.896 [0.883, 0.909] |
 | modernbert_ft_s42_ablate | truncate-w7168__ablate | 0.762 [0.747, 0.777] | nan | nan | nan | nan | nan | 0.908 [0.897, 0.919] | 0.784 [0.760, 0.809] | 0.639 [0.614, 0.664] |
+| modernbert_ft_s43 | chunk-w7168-o2048-min_phalluc | 0.967 [0.960, 0.972] | nan | nan | nan | nan | nan | 0.999 [0.998, 1.000] | 0.997 [0.994, 0.999] | 0.897 [0.883, 0.911] |
+| modernbert_ft_s44 | chunk-w7168-o2048-min_phalluc | 0.964 [0.957, 0.971] | nan | nan | nan | nan | nan | 0.998 [0.996, 0.999] | 0.993 [0.988, 0.998] | 0.892 [0.877, 0.906] |
 | modernbert_nli | chunk-w1536-o1024-min_phalluc | nan | 0.826 [0.814, 0.839] | nan | nan | 0.746 [0.723, 0.769] | 0.706 [0.682, 0.736] | nan | nan | 0.767 [0.749, 0.788] |
 | modernbert_nli | retrieve-w1536-o1024-min_phalluc-k2-bidf | nan | 0.826 [0.814, 0.839] | nan | nan | 0.740 [0.716, 0.762] | 0.705 [0.680, 0.735] | nan | nan | 0.767 [0.749, 0.787] |
 | modernbert_nli | truncate-w1536 | nan | 0.826 [0.814, 0.839] | nan | nan | 0.514 [0.503, 0.524] | 0.539 [0.530, 0.547] | nan | nan | 0.766 [0.748, 0.786] |
@@ -139,6 +143,8 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | lettucedetect | phantom_grid_sub | retrieve-w3584-o1536-min_phalluc-k2-bidf | answer_tfidf:answer_tfidf | 12800 | -0.228 | -0.258 | -0.198 | 0.000 |
 | lettucedetect | phantom_grid_sub | truncate-w3584 | answer_tfidf:answer_tfidf | 12800 | -0.314 | -0.333 | -0.295 | 0.000 |
 | modernbert_answeronly_s42 | phantom_grid_sub | truncate-w7168__ablate | answer_tfidf:answer_tfidf | 12800 | 0.038 | 0.027 | 0.049 | 0.000 |
+| modernbert_answeronly_s43 | phantom_grid_sub | truncate-w7168__ablate | answer_tfidf:answer_tfidf | 12800 | 0.036 | 0.024 | 0.047 | 0.000 |
+| modernbert_answeronly_s44 | phantom_grid_sub | truncate-w7168__ablate | answer_tfidf:answer_tfidf | 12800 | 0.034 | 0.024 | 0.045 | 0.000 |
 | modernbert_ft_s42 | phantom_grid_sub | chunk-w7168-o2048-min_phalluc | modernbert_ft_s42:truncate-w7168 | 12800 | 0.010 | 0.008 | 0.013 | 0.000 |
 | modernbert_ft_s42 | phantom_grid_sub | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_ft_s42:truncate-w7168 | 12800 | 0.017 | 0.013 | 0.022 | 0.000 |
 | modernbert_ft_s42 | phantom_grid_sub | chunk-w7168-o2048-min_phalluc | answer_tfidf:answer_tfidf | 12800 | 0.036 | 0.027 | 0.045 | 0.000 |
@@ -193,13 +199,22 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | lettucedetect | ragtruth_test | truncate-w3584 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.072 | 0.053 | 0.092 | 0.000 |
 | modernbert_ft_s42 | halueval_norm_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.113 | 0.100 | 0.126 | 0.000 |
 | modernbert_ft_s42 | phantom_grid_sub | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.002 | -0.006 | 0.002 | 0.316 |
+| modernbert_ft_s42 | phantom_seed_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 1982 | 0.007 | 0.004 | 0.011 | 0.000 |
 | modernbert_ft_s42 | ragtruth_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.085 | 0.070 | 0.103 | 0.000 |
 | modernbert_ft_s42 | halueval_norm_test | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.113 | 0.100 | 0.126 | 0.000 |
 | modernbert_ft_s42 | phantom_grid_sub | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | 0.005 | 0.001 | 0.009 | 0.008 |
+| modernbert_ft_s42 | phantom_seed_test | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 1982 | 0.007 | 0.004 | 0.011 | 0.000 |
 | modernbert_ft_s42 | ragtruth_test | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.085 | 0.070 | 0.103 | 0.000 |
 | modernbert_ft_s42 | halueval_norm_test | truncate-w7168 | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.113 | 0.100 | 0.126 | 0.000 |
 | modernbert_ft_s42 | phantom_grid_sub | truncate-w7168 | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.013 | -0.018 | -0.007 | 0.000 |
+| modernbert_ft_s42 | phantom_seed_test | truncate-w7168 | modernbert_answeronly_s42:truncate-w7168__ablate | 1982 | 0.007 | 0.004 | 0.011 | 0.000 |
 | modernbert_ft_s42 | ragtruth_test | truncate-w7168 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.085 | 0.070 | 0.103 | 0.000 |
+| modernbert_ft_s43 | halueval_norm_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.117 | 0.104 | 0.129 | 0.000 |
+| modernbert_ft_s43 | phantom_seed_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 1982 | 0.007 | 0.004 | 0.011 | 0.000 |
+| modernbert_ft_s43 | ragtruth_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.087 | 0.070 | 0.104 | 0.000 |
+| modernbert_ft_s44 | halueval_norm_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.114 | 0.101 | 0.128 | 0.000 |
+| modernbert_ft_s44 | phantom_seed_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 1982 | 0.006 | 0.002 | 0.009 | 0.000 |
+| modernbert_ft_s44 | ragtruth_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.081 | 0.065 | 0.099 | 0.000 |
 | modernbert_nli | phantom_grid_sub | chunk-w1536-o1024-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.247 | -0.272 | -0.224 | 0.000 |
 | modernbert_nli | ragtruth_test | chunk-w1536-o1024-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | -0.044 | -0.065 | -0.022 | 0.000 |
 | modernbert_nli | phantom_grid_sub | retrieve-w1536-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.253 | -0.279 | -0.231 | 0.000 |
@@ -207,13 +222,33 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | modernbert_nli | phantom_grid_sub | truncate-w1536 | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.479 | -0.492 | -0.468 | 0.000 |
 | modernbert_nli | ragtruth_test | truncate-w1536 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | -0.045 | -0.067 | -0.023 | 0.000 |
 
+
+### Seed variation (AUROC mean and sd over training seeds)
+
+| base | strategy | slice | group | n_seeds | mean | sd |
+|---|---|---|---|---|---|---|
+| modernbert_answeronly | truncate-w7168__ablate | halueval_norm_test | all | 3 | 0.854 | 0.003 |
+| modernbert_answeronly | truncate-w7168__ablate | phantom_grid_sub | all | 3 | 0.991 | 0.002 |
+| modernbert_answeronly | truncate-w7168__ablate | phantom_grid_sub | hard | 3 | 0.969 | 0.006 |
+| modernbert_answeronly | truncate-w7168__ablate | phantom_seed_test | all | 3 | 0.992 | 0.000 |
+| modernbert_answeronly | truncate-w7168__ablate | phantom_seed_test | hard | 3 | 0.971 | 0.001 |
+| modernbert_answeronly | truncate-w7168__ablate | ragtruth_test | all | 3 | 0.814 | 0.003 |
+| modernbert_ft | chunk-w7168-o2048-min_phalluc | halueval_norm_test | all | 3 | 0.965 | 0.002 |
+| modernbert_ft | chunk-w7168-o2048-min_phalluc | phantom_seed_test | all | 3 | 0.999 | 0.001 |
+| modernbert_ft | chunk-w7168-o2048-min_phalluc | phantom_seed_test | hard | 3 | 0.996 | 0.003 |
+| modernbert_ft | chunk-w7168-o2048-min_phalluc | ragtruth_test | all | 3 | 0.895 | 0.003 |
+
 ## Fine-tuning
 
 | run | base | train_rows | val_auroc | minutes |
 |---|---|---|---|---|
 | deberta-nli-ft_seed42 | MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli | 21686 | 0.939 | 44.500 |
 | modernbert-answeronly-ft_seed42 | tasksource/ModernBERT-base-nli | 21686 | 0.861 | 44.100 |
+| modernbert-answeronly-ft_seed43 | tasksource/ModernBERT-base-nli | 21686 | 0.857 | 43.600 |
+| modernbert-answeronly-ft_seed44 | tasksource/ModernBERT-base-nli | 21686 | 0.858 | 40.900 |
 | modernbert-nli-ft_seed42 | tasksource/ModernBERT-base-nli | 32437 | 0.946 | 208.000 |
+| modernbert-nli-ft_seed43 | tasksource/ModernBERT-base-nli | 32467 | 0.948 | 186.300 |
+| modernbert-nli-ft_seed44 | tasksource/ModernBERT-base-nli | 32618 | 0.946 | 184.100 |
 
 ## Discussion
 
@@ -313,17 +348,31 @@ Fine-tuned detectors score `deberta_ft_s42` 0.998 on PHANTOM and 0.864 on RAGTru
 | modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | phantom_grid_sub | all | 12800 | -0.002 [-0.006, +0.002] |
 | modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | phantom_grid_sub | hard | 5216 | -0.007 [-0.020, +0.009] |
 | modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | phantom_grid_sub | len=30000|hard | 978 | -0.043 [-0.060, -0.025]* |
+| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | phantom_seed_test | all | 1982 | +0.007 [+0.004, +0.011]* |
+| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | phantom_seed_test | hard | 750 | +0.027 [+0.017, +0.038]* |
 | modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | ragtruth_test | all | 2675 | +0.085 [+0.070, +0.103]* |
 | modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | halueval_norm_test | all | 2956 | +0.113 [+0.100, +0.126]* |
 | modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | phantom_grid_sub | all | 12800 | +0.005 [+0.001, +0.009]* |
 | modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | phantom_grid_sub | hard | 5216 | +0.017 [+0.003, +0.032]* |
 | modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | phantom_grid_sub | len=30000|hard | 978 | +0.016 [+0.002, +0.031]* |
+| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | phantom_seed_test | all | 1982 | +0.007 [+0.004, +0.011]* |
+| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | phantom_seed_test | hard | 750 | +0.027 [+0.017, +0.038]* |
 | modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | ragtruth_test | all | 2675 | +0.085 [+0.070, +0.103]* |
 | modernbert_ft_s42 | truncate-w7168 | halueval_norm_test | all | 2956 | +0.113 [+0.100, +0.126]* |
 | modernbert_ft_s42 | truncate-w7168 | phantom_grid_sub | all | 12800 | -0.013 [-0.018, -0.007]* |
 | modernbert_ft_s42 | truncate-w7168 | phantom_grid_sub | hard | 5216 | -0.046 [-0.063, -0.028]* |
 | modernbert_ft_s42 | truncate-w7168 | phantom_grid_sub | len=30000|hard | 978 | -0.129 [-0.158, -0.103]* |
+| modernbert_ft_s42 | truncate-w7168 | phantom_seed_test | all | 1982 | +0.007 [+0.004, +0.011]* |
+| modernbert_ft_s42 | truncate-w7168 | phantom_seed_test | hard | 750 | +0.027 [+0.017, +0.038]* |
 | modernbert_ft_s42 | truncate-w7168 | ragtruth_test | all | 2675 | +0.085 [+0.070, +0.103]* |
+| modernbert_ft_s43 | chunk-w7168-o2048-min_phalluc | halueval_norm_test | all | 2956 | +0.117 [+0.104, +0.129]* |
+| modernbert_ft_s43 | chunk-w7168-o2048-min_phalluc | phantom_seed_test | all | 1982 | +0.007 [+0.004, +0.011]* |
+| modernbert_ft_s43 | chunk-w7168-o2048-min_phalluc | phantom_seed_test | hard | 750 | +0.026 [+0.015, +0.036]* |
+| modernbert_ft_s43 | chunk-w7168-o2048-min_phalluc | ragtruth_test | all | 2675 | +0.087 [+0.070, +0.104]* |
+| modernbert_ft_s44 | chunk-w7168-o2048-min_phalluc | halueval_norm_test | all | 2956 | +0.114 [+0.101, +0.128]* |
+| modernbert_ft_s44 | chunk-w7168-o2048-min_phalluc | phantom_seed_test | all | 1982 | +0.006 [+0.002, +0.009]* |
+| modernbert_ft_s44 | chunk-w7168-o2048-min_phalluc | phantom_seed_test | hard | 750 | +0.022 [+0.012, +0.034]* |
+| modernbert_ft_s44 | chunk-w7168-o2048-min_phalluc | ragtruth_test | all | 2675 | +0.081 [+0.065, +0.099]* |
 
 On PHANTOM the fine-tuned detectors differ from the control by -0.129 to +0.017 AUROC (all rows, hard subset and 30K hard). On RAGTruth and rewritten HaluEval they are +0.053 to +0.122 relative to it. Every RAGTruth and HaluEval comparison is above the control (CI above 0), so on those datasets the fine-tuned models use the evidence. On PHANTOM, 6 of 15 comparisons are above the control (largest gain +0.017) and 4 are below it (largest loss -0.129). The largest loss is `modernbert_ft_s42` truncate (len=30000|hard): reading a window that does not contain the evidence scores worse than not reading the context at all.
 
@@ -358,7 +407,22 @@ With the evidence out of view, zero-shot detectors score 0.402 to 0.678. The fin
 
 ### 7. Seed variation
 
-Only one training seed (42) is available, so there is no seed-variation estimate. The CIs above cover test-sample variation, not training variation.
+Mean +/- sd over training seeds:
+
+| base | strategy | slice | group | value |
+|---|---|---|---|---|
+| modernbert_answeronly | truncate-w7168__ablate | halueval_norm_test | all | 0.854 +/- 0.003 (n=3) |
+| modernbert_answeronly | truncate-w7168__ablate | phantom_grid_sub | all | 0.991 +/- 0.002 (n=3) |
+| modernbert_answeronly | truncate-w7168__ablate | phantom_grid_sub | hard | 0.969 +/- 0.006 (n=3) |
+| modernbert_answeronly | truncate-w7168__ablate | phantom_seed_test | all | 0.992 +/- 0.000 (n=3) |
+| modernbert_answeronly | truncate-w7168__ablate | phantom_seed_test | hard | 0.971 +/- 0.001 (n=3) |
+| modernbert_answeronly | truncate-w7168__ablate | ragtruth_test | all | 0.814 +/- 0.003 (n=3) |
+| modernbert_ft | chunk-w7168-o2048-min_phalluc | halueval_norm_test | all | 0.965 +/- 0.002 (n=3) |
+| modernbert_ft | chunk-w7168-o2048-min_phalluc | phantom_seed_test | all | 0.999 +/- 0.001 (n=3) |
+| modernbert_ft | chunk-w7168-o2048-min_phalluc | phantom_seed_test | hard | 0.996 +/- 0.003 (n=3) |
+| modernbert_ft | chunk-w7168-o2048-min_phalluc | ragtruth_test | all | 0.895 +/- 0.003 (n=3) |
+
+The largest seed sd is 0.006 AUROC. Seed-mean gap, fine-tuned ModernBERT minus the answer-only control: halueval_norm_test all +0.111 (larger seed sd 0.003), phantom_seed_test all +0.007 (larger seed sd 0.001), phantom_seed_test hard +0.025 (larger seed sd 0.003), ragtruth_test all +0.081 (larger seed sd 0.003). With 3 seeds the sd is a rough estimate, so it only rules out seed noise as the cause of gaps several times larger than it. The long-context PHANTOM grid has one fine-tuned seed (42), so the fine-tuned results in sections 3-6 rest on that seed.
 
 ### Summary
 
