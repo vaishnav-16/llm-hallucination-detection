@@ -1,0 +1,23 @@
+{
+  "hash": "b04e0130e9b5",
+  "run": "modernbert_ft_s44",
+  "slice": "ragtruth_val",
+  "strategy": "chunk-w7168-o2048-min_phalluc",
+  "ablate": false,
+  "detector": {
+    "name": "seed44",
+    "requires": "gpu",
+    "max_length": 8192,
+    "claims_truncated": 0
+  },
+  "spec": {
+    "strategy": "chunk",
+    "window": 7168,
+    "overlap": 2048
+  },
+  "rows": 2244,
+  "limit": null,
+  "elapsed_s": 36.6,
+  "git_commit": "836e04f",
+  "created": "2026-10-21T06:54:50"
+}
