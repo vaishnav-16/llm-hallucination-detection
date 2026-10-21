@@ -13,7 +13,8 @@ For each (detector, strategy) and each test slice:
 - 95% CIs come from a pair-clustered bootstrap.
 
 Paired comparisons (same rows, aligned by example_id): each chunking strategy vs ``truncate`` for the same
-detector, and each detector vs the answer-only TF-IDF baseline, per context length.
+detector, each detector vs the answer-only TF-IDF baseline, per context length, and each detector vs the answer-only
+fine-tuned control (``ANSWER_ONLY_CONTROL``), the stronger line for fine-tuned models.
 
 Outputs ``artifacts/metrics/metrics_long.csv``, ``comparisons.csv`` and ``headline.csv``.
 """
@@ -41,6 +42,8 @@ VAL_FOR = {
 CI_METRICS = ["auroc", "f1", "balanced_accuracy"]
 EVIDENCE_OFFSETS = ARTIFACTS_DIR / "phantom_evidence_offsets.csv"
 OFFSET_KEYS = ["pair_id", "filing", "target_tokens", "position"]
+ANSWER_ONLY_CONTROL = "modernbert_answeronly_s42"  # ModernBERT fine-tuned on question + answer only (no context)
+CONTROL_SLICES = ("phantom_grid_sub", "phantom_seed_test", "ragtruth_test", "halueval_norm_test")
 
 
 def load_predictions(pred_dir=ARTIFACTS_DIR / "predictions") -> pd.DataFrame:
@@ -134,7 +137,7 @@ def evaluate_all(n_boot: int = 1000, n_boot_cells: int = 200, pred_dir=ARTIFACTS
 
 
 def _paired(a: pd.DataFrame, b: pd.DataFrame) -> pd.DataFrame:
-    return a[["example_id", "pair_id", "label", "target_tokens", "p_halluc"]].merge(
+    return a[["example_id", "pair_id", "label", "target_tokens", "faithful_chars", "p_halluc"]].merge(
         b[["example_id", "p_halluc"]], on="example_id", suffixes=("_a", "_b")
     )
 
@@ -164,8 +167,38 @@ def _comparisons(preds: pd.DataFrame, n_boot: int = 500) -> pd.DataFrame:
                                           g["pair_id"].to_numpy(), "auroc", n_boot=n_boot)
                 rows.append({"detector": det, "slice": sl, "a": sa, "b": f"{'answer_tfidf' if sb == 'answer_tfidf' else det}:{sb}",
                              "group": n, "n": len(g), "metric": "auroc", **r})
+    rows += _control_comparisons(preds, n_boot)
     cols = ["detector", "slice", "a", "b", "group", "n", "metric", "diff", "ci_lo", "ci_hi", "p_value"]
     return pd.DataFrame(rows, columns=cols)
+
+
+def _control_comparisons(preds: pd.DataFrame, n_boot: int = 500) -> list[dict]:
+    """Each detector x strategy minus the answer-only fine-tuned control, on the same rows of each control slice.
+
+    Groups: all; on PHANTOM also the hard subset and the hard subset at each length.
+    """
+    rows = []
+    ctrl = preds[preds["detector"] == ANSWER_ONLY_CONTROL]
+    cand = preds[preds["slice"].isin(CONTROL_SLICES) & ~preds["strategy"].str.endswith("__ablate")]
+    for (det, strat, sl), d in cand.groupby(["detector", "strategy", "slice"]):
+        if det == ANSWER_ONLY_CONTROL or det.startswith("answer_") or det == "lexical_support":
+            continue
+        b = ctrl[ctrl["slice"] == sl]
+        if b.empty:
+            continue
+        m = _paired(d, b)
+        groups = [("all", m)]
+        if sl.startswith("phantom"):
+            hard = m[m["faithful_chars"] >= HARD_FAITHFUL_CHARS]
+            groups += [("hard", hard)] + [(f"len={k}|hard", v) for k, v in hard.groupby("target_tokens")]
+        for g, sub in groups:
+            if len(sub) < 20 or sub["label"].nunique() < 2:
+                continue
+            r = paired_bootstrap_diff(sub["label"].to_numpy(), sub["p_halluc_a"].to_numpy(), sub["p_halluc_b"].to_numpy(),
+                                      sub["pair_id"].to_numpy(), "auroc", n_boot=n_boot)
+            rows.append({"detector": det, "slice": sl, "a": strat, "b": f"{ANSWER_ONLY_CONTROL}:{b['strategy'].iloc[0]}",
+                         "group": g, "n": len(sub), "metric": "auroc", **r})
+    return rows
 
 
 def headline(long: pd.DataFrame) -> pd.DataFrame:

@@ -1,8 +1,8 @@
 # Length-robust hallucination detection on PHANTOM, RAGTruth and HaluEval
 
-_Generated 2026-10-15 by `python -m src.cli report` from the committed `artifacts/`._
+_Generated 2026-10-20 by `python -m src.cli report` from the committed `artifacts/`._
 
-**Pipeline status.** Done: prepare, baselines, rewrite-halueval, score-smoke, score-zeroshot, probe-jev, judge-jev, finetune, evaluate. Pending: probe-api, judges-api, score-finetuned, judge-local, report. Sections that depend on pending stages say so explicitly.
+**Pipeline status.** Done: prepare, baselines, rewrite-halueval, score-smoke, score-zeroshot, probe-jev, judge-jev, finetune, evaluate, report. Pending: probe-api, judges-api, score-finetuned, judge-local. Sections that depend on pending stages say so explicitly.
 
 ## Research question
 
@@ -149,6 +149,63 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 | modernbert_nli | phantom_grid_sub | chunk-w1536-o1024-min_phalluc | answer_tfidf:answer_tfidf | 12800 | -0.209 | -0.234 | -0.184 | 0.000 |
 | modernbert_nli | phantom_grid_sub | retrieve-w1536-o1024-min_phalluc-k2-bidf | answer_tfidf:answer_tfidf | 12800 | -0.215 | -0.241 | -0.192 | 0.000 |
 | modernbert_nli | phantom_grid_sub | truncate-w1536 | answer_tfidf:answer_tfidf | 12800 | -0.441 | -0.458 | -0.425 | 0.000 |
+| deberta_ft_s42 | halueval_norm_test | chunk-w400-o128-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.122 | 0.109 | 0.135 | 0.000 |
+| deberta_ft_s42 | phantom_grid_sub | chunk-w400-o128-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | 0.005 | 0.001 | 0.008 | 0.000 |
+| deberta_ft_s42 | ragtruth_test | chunk-w400-o128-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.053 | 0.035 | 0.073 | 0.000 |
+| deberta_ft_s42 | halueval_norm_test | truncate-w400 | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.122 | 0.109 | 0.135 | 0.000 |
+| deberta_ft_s42 | phantom_grid_sub | truncate-w400 | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.003 | -0.007 | 0.001 | 0.088 |
+| deberta_ft_s42 | ragtruth_test | truncate-w400 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.063 | 0.045 | 0.079 | 0.000 |
+| deberta_nli | phantom_grid_sub | chunk-w400-o128-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.394 | -0.409 | -0.380 | 0.000 |
+| deberta_nli | ragtruth_test | chunk-w400-o128-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | -0.219 | -0.249 | -0.186 | 0.000 |
+| deberta_nli | phantom_grid_sub | retrieve-w400-o128-min_phalluc-k3-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.296 | -0.316 | -0.275 | 0.000 |
+| deberta_nli | ragtruth_test | retrieve-w400-o128-min_phalluc-k3-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | -0.214 | -0.244 | -0.183 | 0.000 |
+| deberta_nli | phantom_grid_sub | truncate-w400 | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.458 | -0.472 | -0.446 | 0.000 |
+| deberta_nli | ragtruth_test | truncate-w400 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | -0.213 | -0.242 | -0.181 | 0.000 |
+| hhem | phantom_grid_sub | chunk-w2048-o1024-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.293 | -0.319 | -0.267 | 0.000 |
+| hhem | ragtruth_test | chunk-w2048-o1024-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.013 | -0.010 | 0.035 | 0.288 |
+| hhem | phantom_grid_sub | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.295 | -0.321 | -0.268 | 0.000 |
+| hhem | ragtruth_test | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.013 | -0.010 | 0.035 | 0.288 |
+| hhem | phantom_grid_sub | truncate-w2048 | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.441 | -0.452 | -0.430 | 0.000 |
+| hhem | ragtruth_test | truncate-w2048 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.013 | -0.010 | 0.035 | 0.280 |
+| jev_choice | phantom_grid_sub | chunk-w16000-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 3840 | -0.028 | -0.049 | -0.011 | 0.004 |
+| jev_choice | ragtruth_test | chunk-w16000-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 897 | 0.124 | 0.093 | 0.156 | 0.000 |
+| jev_choice | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2 | modernbert_answeronly_s42:truncate-w7168__ablate | 3840 | -0.067 | -0.088 | -0.048 | 0.000 |
+| jev_choice | ragtruth_test | retrieve-w1500-o750-min_phalluc-k2 | modernbert_answeronly_s42:truncate-w7168__ablate | 897 | 0.126 | 0.096 | 0.160 | 0.000 |
+| jev_choice | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 3840 | -0.028 | -0.051 | -0.011 | 0.004 |
+| jev_choice | ragtruth_test | retrieve-w1500-o750-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 897 | 0.126 | 0.096 | 0.160 | 0.000 |
+| jev_choice | phantom_grid_sub | truncate-w16000 | modernbert_answeronly_s42:truncate-w7168__ablate | 3840 | -0.164 | -0.183 | -0.148 | 0.000 |
+| jev_choice | ragtruth_test | truncate-w16000 | modernbert_answeronly_s42:truncate-w7168__ablate | 897 | 0.124 | 0.093 | 0.156 | 0.000 |
+| jev_choice_full | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.020 | -0.031 | -0.010 | 0.004 |
+| jev_noul | phantom_grid_sub | chunk-w16000-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 3840 | -0.027 | -0.049 | -0.011 | 0.000 |
+| jev_noul | ragtruth_test | chunk-w16000-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 897 | 0.125 | 0.094 | 0.157 | 0.000 |
+| jev_noul | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2 | modernbert_answeronly_s42:truncate-w7168__ablate | 3840 | -0.066 | -0.087 | -0.048 | 0.000 |
+| jev_noul | ragtruth_test | retrieve-w1500-o750-min_phalluc-k2 | modernbert_answeronly_s42:truncate-w7168__ablate | 897 | 0.127 | 0.096 | 0.161 | 0.000 |
+| jev_noul | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 3840 | -0.028 | -0.049 | -0.011 | 0.004 |
+| jev_noul | ragtruth_test | retrieve-w1500-o750-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 897 | 0.127 | 0.096 | 0.161 | 0.000 |
+| jev_noul | phantom_grid_sub | truncate-w16000 | modernbert_answeronly_s42:truncate-w7168__ablate | 3840 | -0.156 | -0.175 | -0.140 | 0.000 |
+| jev_noul | ragtruth_test | truncate-w16000 | modernbert_answeronly_s42:truncate-w7168__ablate | 897 | 0.125 | 0.094 | 0.157 | 0.000 |
+| jev_noul_full | phantom_grid_sub | retrieve-w1500-o750-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.019 | -0.029 | -0.010 | 0.004 |
+| lettucedetect | phantom_grid_sub | chunk-w3584-o1536-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.260 | -0.283 | -0.237 | 0.000 |
+| lettucedetect | ragtruth_test | chunk-w3584-o1536-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.072 | 0.053 | 0.092 | 0.000 |
+| lettucedetect | phantom_grid_sub | retrieve-w3584-o1536-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.266 | -0.290 | -0.242 | 0.000 |
+| lettucedetect | ragtruth_test | retrieve-w3584-o1536-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.072 | 0.053 | 0.092 | 0.000 |
+| lettucedetect | phantom_grid_sub | truncate-w3584 | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.353 | -0.365 | -0.339 | 0.000 |
+| lettucedetect | ragtruth_test | truncate-w3584 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.072 | 0.053 | 0.092 | 0.000 |
+| modernbert_ft_s42 | halueval_norm_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.113 | 0.100 | 0.126 | 0.000 |
+| modernbert_ft_s42 | phantom_grid_sub | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.002 | -0.006 | 0.002 | 0.316 |
+| modernbert_ft_s42 | ragtruth_test | chunk-w7168-o2048-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.085 | 0.070 | 0.103 | 0.000 |
+| modernbert_ft_s42 | halueval_norm_test | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.113 | 0.100 | 0.126 | 0.000 |
+| modernbert_ft_s42 | phantom_grid_sub | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | 0.005 | 0.001 | 0.009 | 0.008 |
+| modernbert_ft_s42 | ragtruth_test | retrieve-w2048-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.085 | 0.070 | 0.103 | 0.000 |
+| modernbert_ft_s42 | halueval_norm_test | truncate-w7168 | modernbert_answeronly_s42:truncate-w7168__ablate | 2956 | 0.113 | 0.100 | 0.126 | 0.000 |
+| modernbert_ft_s42 | phantom_grid_sub | truncate-w7168 | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.013 | -0.018 | -0.007 | 0.000 |
+| modernbert_ft_s42 | ragtruth_test | truncate-w7168 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | 0.085 | 0.070 | 0.103 | 0.000 |
+| modernbert_nli | phantom_grid_sub | chunk-w1536-o1024-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.247 | -0.272 | -0.224 | 0.000 |
+| modernbert_nli | ragtruth_test | chunk-w1536-o1024-min_phalluc | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | -0.044 | -0.065 | -0.022 | 0.000 |
+| modernbert_nli | phantom_grid_sub | retrieve-w1536-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.253 | -0.279 | -0.231 | 0.000 |
+| modernbert_nli | ragtruth_test | retrieve-w1536-o1024-min_phalluc-k2-bidf | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | -0.044 | -0.065 | -0.022 | 0.000 |
+| modernbert_nli | phantom_grid_sub | truncate-w1536 | modernbert_answeronly_s42:truncate-w7168__ablate | 12800 | -0.479 | -0.492 | -0.468 | 0.000 |
+| modernbert_nli | ragtruth_test | truncate-w1536 | modernbert_answeronly_s42:truncate-w7168__ablate | 2675 | -0.045 | -0.067 | -0.023 | 0.000 |
 
 ## Fine-tuning
 
@@ -160,10 +217,159 @@ AUROC with 95% pair-clustered bootstrap CIs. Thresholds for F1 and balanced accu
 
 ## Discussion
 
-_To be written once the GPU stages are complete. It must discuss each result against the answer-only line and the hard subset, not in isolation._
+### 1. The answer-only line
+
+Answer-only TF-IDF reaches 0.957 [0.950, 0.965] AUROC on PHANTOM test filings (0.888 [0.869, 0.908] on the hard subset), 0.808 [0.787, 0.828] on RAGTruth and 0.968 [0.962, 0.974] on original HaluEval, where answer length alone gives 0.982 [0.977, 0.986]. Rewriting the HaluEval answers removes most of that: answer length falls to 0.643 [0.628, 0.658] and TF-IDF to 0.703 [0.688, 0.718].
+
+TF-IDF is not the strongest answer-only line. `modernbert_answeronly_s42` is ModernBERT fine-tuned with the same recipe as `modernbert_ft_s42` but with every context blanked, so it only ever sees question and answer. It reaches 0.993 [0.989, 0.997] on PHANTOM (0.975 [0.957, 0.991] hard, identical at every length because it never reads the document), 0.811 [0.791, 0.830] on RAGTruth and 0.850 [0.836, 0.863] on rewritten HaluEval. The hard subset was built against the answer-length cue; a fine-tuned encoder finds other answer-side cues that it does not remove. Fine-tuned detectors are therefore judged against this control (section 5), zero-shot detectors against TF-IDF.
+
+### 2. Zero-shot detectors on PHANTOM
+
+| detector | truncate seed | truncate 30K | chunk 30K | retrieve 30K | best hard (strategy) |
+|---|---|---|---|---|---|
+| deberta_nli | 0.613 | 0.528 | 0.554 | 0.701 | 0.654 [0.625, 0.682] (retrieve) |
+| hhem | 0.702 | 0.531 | 0.705 | 0.698 | 0.831 [0.796, 0.863] (chunk) |
+| jev_choice | 0.975 | 0.623 | 0.968 | 0.963 | 0.975 [0.941, 0.997] (retrieve) |
+| jev_noul | 0.975 | 0.683 | 0.969 | 0.961 | 0.972 [0.938, 0.997] (retrieve) |
+| lettucedetect | 0.810 | 0.620 | 0.728 | 0.714 | 0.816 [0.786, 0.847] (retrieve) |
+| modernbert_nli | 0.741 | 0.481 | 0.747 | 0.733 | 0.706 [0.682, 0.736] (chunk) |
+
+Answer-only TF-IDF on the hard subset: 0.888 [0.869, 0.908]. Detectors whose best hard-subset CI lies entirely above it: `jev_choice`, `jev_noul`. The others do not show, on PHANTOM, that they use the evidence better than a bag of answer words.
+
+### 3. Truncate, chunk and retrieve as the context grows
+
+Truncation loses the evidence once it falls outside the window. From the seed passage to 30K nominal tokens truncate loses `jev_choice` +0.353, `jev_noul` +0.292, `modernbert_nli` +0.260, `lettucedetect` +0.190, `hhem` +0.171, `deberta_nli` +0.084, `modernbert_ft_s42` +0.044, `deberta_ft_s42` +0.004 AUROC (positive = drop). Chunking and retrieval reread the whole document: at 30K, 17 of 17 chunk/retrieve strategies beat their own truncate on the same rows (paired CI above 0). Between the seed passage and 30K, chunk changes by -0.151 to +0.006 AUROC across detectors. Recovering the seed-length level is the ceiling here, and section 2 compares that level with the answer-only line.
+
+### 4. Evidence position (chunk strategy, PHANTOM long cells)
+
+| detector | beginning | middle | end | spread |
+|---|---|---|---|---|
+| deberta_nli | 0.587 | 0.584 | 0.611 | 0.027 |
+| hhem | 0.702 | 0.706 | 0.697 | 0.009 |
+| jev_choice | 0.969 | 0.965 | 0.971 | 0.006 |
+| jev_noul | 0.969 | 0.964 | 0.972 | 0.008 |
+| lettucedetect | 0.691 | 0.747 | 0.753 | 0.062 |
+| modernbert_nli | 0.712 | 0.758 | 0.781 | 0.069 |
+| deberta_ft_s42 | 0.998 | 0.998 | 0.998 | 0.000 |
+| modernbert_ft_s42 | 0.982 | 0.996 | 0.997 | 0.015 |
+
+With chunking every window is read, so position matters only through which window holds the evidence and how much filing text surrounds it. The spread column is the largest gap between positions. The per-cell heatmaps above show position by length.
+
+### 5. Fine-tuned vs zero-shot, against the answer-only control
+
+Fine-tuned detectors score `deberta_ft_s42` 0.998 on PHANTOM and 0.864 on RAGTruth (chunk), `modernbert_ft_s42` 0.991 on PHANTOM and 0.896 on RAGTruth (chunk), against at most 0.969 for any zero-shot detector on PHANTOM. The paired differences against the answer-only control (\* = CI excludes 0) say how much of that comes from reading the evidence:
+
+| detector | strategy | slice | group | n | AUROC minus answer-only control [95% CI] |
+|---|---|---|---|---|---|
+| deberta_ft_s42 | chunk-w400-o128-min_phalluc | halueval_norm_test | all | 2956 | +0.122 [+0.109, +0.135]* |
+| deberta_ft_s42 | chunk-w400-o128-min_phalluc | phantom_grid_sub | all | 12800 | +0.005 [+0.001, +0.008]* |
+| deberta_ft_s42 | chunk-w400-o128-min_phalluc | phantom_grid_sub | hard | 5216 | +0.016 [+0.003, +0.030]* |
+| deberta_ft_s42 | chunk-w400-o128-min_phalluc | phantom_grid_sub | len=30000|hard | 978 | +0.014 [+0.002, +0.028]* |
+| deberta_ft_s42 | chunk-w400-o128-min_phalluc | ragtruth_test | all | 2675 | +0.053 [+0.035, +0.073]* |
+| deberta_ft_s42 | truncate-w400 | halueval_norm_test | all | 2956 | +0.122 [+0.109, +0.135]* |
+| deberta_ft_s42 | truncate-w400 | phantom_grid_sub | all | 12800 | -0.003 [-0.007, +0.001] |
+| deberta_ft_s42 | truncate-w400 | phantom_grid_sub | hard | 5216 | -0.010 [-0.024, +0.004] |
+| deberta_ft_s42 | truncate-w400 | phantom_grid_sub | len=30000|hard | 978 | -0.010 [-0.024, +0.003] |
+| deberta_ft_s42 | truncate-w400 | ragtruth_test | all | 2675 | +0.063 [+0.045, +0.079]* |
+| jev_choice | chunk-w16000-o2048-min_phalluc | phantom_grid_sub | all | 3840 | -0.028 [-0.049, -0.011]* |
+| jev_choice | chunk-w16000-o2048-min_phalluc | phantom_grid_sub | hard | 1472 | -0.016 [-0.063, +0.019] |
+| jev_choice | chunk-w16000-o2048-min_phalluc | phantom_grid_sub | len=30000|hard | 276 | -0.020 [-0.068, +0.019] |
+| jev_choice | chunk-w16000-o2048-min_phalluc | ragtruth_test | all | 897 | +0.124 [+0.093, +0.156]* |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2 | phantom_grid_sub | all | 3840 | -0.067 [-0.088, -0.048]* |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2 | phantom_grid_sub | hard | 1472 | -0.045 [-0.083, -0.008]* |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2 | phantom_grid_sub | len=30000|hard | 276 | -0.009 [-0.050, +0.028] |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2 | ragtruth_test | all | 897 | +0.126 [+0.096, +0.160]* |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | all | 3840 | -0.028 [-0.051, -0.011]* |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | hard | 1472 | -0.007 [-0.048, +0.028] |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | len=30000|hard | 276 | -0.008 [-0.049, +0.029] |
+| jev_choice | retrieve-w1500-o750-min_phalluc-k2-bidf | ragtruth_test | all | 897 | +0.126 [+0.096, +0.160]* |
+| jev_choice | truncate-w16000 | phantom_grid_sub | all | 3840 | -0.164 [-0.183, -0.148]* |
+| jev_choice | truncate-w16000 | phantom_grid_sub | hard | 1472 | -0.143 [-0.182, -0.107]* |
+| jev_choice | truncate-w16000 | phantom_grid_sub | len=30000|hard | 276 | -0.352 [-0.388, -0.313]* |
+| jev_choice | truncate-w16000 | ragtruth_test | all | 897 | +0.124 [+0.093, +0.156]* |
+| jev_choice_full | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | all | 12800 | -0.020 [-0.031, -0.010]* |
+| jev_choice_full | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | hard | 5216 | +0.003 [-0.018, +0.024] |
+| jev_choice_full | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | len=30000|hard | 978 | +0.001 [-0.021, +0.023] |
+| jev_noul | chunk-w16000-o2048-min_phalluc | phantom_grid_sub | all | 3840 | -0.027 [-0.049, -0.011]* |
+| jev_noul | chunk-w16000-o2048-min_phalluc | phantom_grid_sub | hard | 1472 | -0.021 [-0.070, +0.019] |
+| jev_noul | chunk-w16000-o2048-min_phalluc | phantom_grid_sub | len=30000|hard | 276 | -0.026 [-0.078, +0.014] |
+| jev_noul | chunk-w16000-o2048-min_phalluc | ragtruth_test | all | 897 | +0.125 [+0.094, +0.157]* |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2 | phantom_grid_sub | all | 3840 | -0.066 [-0.087, -0.048]* |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2 | phantom_grid_sub | hard | 1472 | -0.047 [-0.089, -0.008]* |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2 | phantom_grid_sub | len=30000|hard | 276 | -0.012 [-0.056, +0.028] |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2 | ragtruth_test | all | 897 | +0.127 [+0.096, +0.161]* |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | all | 3840 | -0.028 [-0.049, -0.011]* |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | hard | 1472 | -0.010 [-0.051, +0.028] |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | len=30000|hard | 276 | -0.013 [-0.056, +0.027] |
+| jev_noul | retrieve-w1500-o750-min_phalluc-k2-bidf | ragtruth_test | all | 897 | +0.127 [+0.096, +0.161]* |
+| jev_noul | truncate-w16000 | phantom_grid_sub | all | 3840 | -0.156 [-0.175, -0.140]* |
+| jev_noul | truncate-w16000 | phantom_grid_sub | hard | 1472 | -0.138 [-0.178, -0.099]* |
+| jev_noul | truncate-w16000 | phantom_grid_sub | len=30000|hard | 276 | -0.308 [-0.348, -0.267]* |
+| jev_noul | truncate-w16000 | ragtruth_test | all | 897 | +0.125 [+0.094, +0.157]* |
+| jev_noul_full | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | all | 12800 | -0.019 [-0.029, -0.010]* |
+| jev_noul_full | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | hard | 5216 | +0.002 [-0.020, +0.023] |
+| jev_noul_full | retrieve-w1500-o750-min_phalluc-k2-bidf | phantom_grid_sub | len=30000|hard | 978 | -0.000 [-0.022, +0.022] |
+| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | halueval_norm_test | all | 2956 | +0.113 [+0.100, +0.126]* |
+| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | phantom_grid_sub | all | 12800 | -0.002 [-0.006, +0.002] |
+| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | phantom_grid_sub | hard | 5216 | -0.007 [-0.020, +0.009] |
+| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | phantom_grid_sub | len=30000|hard | 978 | -0.043 [-0.060, -0.025]* |
+| modernbert_ft_s42 | chunk-w7168-o2048-min_phalluc | ragtruth_test | all | 2675 | +0.085 [+0.070, +0.103]* |
+| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | halueval_norm_test | all | 2956 | +0.113 [+0.100, +0.126]* |
+| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | phantom_grid_sub | all | 12800 | +0.005 [+0.001, +0.009]* |
+| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | phantom_grid_sub | hard | 5216 | +0.017 [+0.003, +0.032]* |
+| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | phantom_grid_sub | len=30000|hard | 978 | +0.016 [+0.002, +0.031]* |
+| modernbert_ft_s42 | retrieve-w2048-o1024-min_phalluc-k2-bidf | ragtruth_test | all | 2675 | +0.085 [+0.070, +0.103]* |
+| modernbert_ft_s42 | truncate-w7168 | halueval_norm_test | all | 2956 | +0.113 [+0.100, +0.126]* |
+| modernbert_ft_s42 | truncate-w7168 | phantom_grid_sub | all | 12800 | -0.013 [-0.018, -0.007]* |
+| modernbert_ft_s42 | truncate-w7168 | phantom_grid_sub | hard | 5216 | -0.046 [-0.063, -0.028]* |
+| modernbert_ft_s42 | truncate-w7168 | phantom_grid_sub | len=30000|hard | 978 | -0.129 [-0.158, -0.103]* |
+| modernbert_ft_s42 | truncate-w7168 | ragtruth_test | all | 2675 | +0.085 [+0.070, +0.103]* |
+
+On PHANTOM the fine-tuned detectors differ from the control by -0.129 to +0.017 AUROC (all rows, hard subset and 30K hard). On RAGTruth and rewritten HaluEval they are +0.053 to +0.122 relative to it. Every RAGTruth and HaluEval comparison is above the control (CI above 0), so on those datasets the fine-tuned models use the evidence. On PHANTOM, 6 of 15 comparisons are above the control (largest gain +0.017) and 4 are below it (largest loss -0.129). The largest loss is `modernbert_ft_s42` truncate (len=30000|hard): reading a window that does not contain the evidence scores worse than not reading the context at all.
+
+### 6. Ablations: what is left without the evidence
+
+Empty-context runs score each answer with a blank context:
+
+| detector | PHANTOM seed | PHANTOM seed hard | RAGTruth | HaluEval | HaluEval-norm |
+|---|---|---|---|---|---|
+| deberta_ft_s42_ablate | 0.978 | 0.914 | 0.552 | n/a | 0.693 |
+| hhem_ablate | 0.384 | 0.502 | 0.395 | 0.319 | n/a |
+| jev_noul_ablate | 0.746 | 0.678 | 0.518 | 0.654 | n/a |
+| modernbert_ft_s42_ablate | 0.908 | 0.784 | 0.639 | n/a | 0.762 |
+| modernbert_nli_ablate | 0.244 | 0.465 | 0.578 | 0.256 | n/a |
+
+Below 0.5 (inverted, so the score still carries answer information, in reverse): `hhem_ablate`, `modernbert_nli_ablate`. With no context, `deberta_ft_s42_ablate` scores 0.978 on PHANTOM seed passages and 0.552 on RAGTruth. With no context, `modernbert_ft_s42_ablate` scores 0.908 on PHANTOM seed passages and 0.639 on RAGTruth.
+
+An empty context is out of distribution for the fine-tuned models, so it understates what they can do without evidence. The `evid>=W` rows avoid that: documents whose evidence passage first appears after W words, so a `truncate-wW` window provably cannot contain it (`artifacts/phantom_evidence_offsets.csv`).
+
+| detector | window | n | AUROC | hard | answer-only control, all evid>=W rows |
+|---|---|---|---|---|---|
+| deberta_nli | 400 | 7982 | 0.491 [0.479, 0.503] | 0.486 [0.470, 0.500] | 0.993 |
+| hhem | 2048 | 5616 | 0.505 [0.489, 0.521] | 0.519 [0.498, 0.539] | 0.993 |
+| jev_choice | 16000 | 462 | 0.563 [0.544, 0.586] | 0.569 [0.532, 0.612] | 0.993 |
+| jev_noul | 16000 | 462 | 0.678 [0.655, 0.704] | 0.635 [0.602, 0.676] | 0.993 |
+| lettucedetect | 3584 | 5508 | 0.647 [0.629, 0.667] | 0.561 [0.542, 0.583] | 0.993 |
+| modernbert_nli | 1536 | 6378 | 0.402 [0.384, 0.421] | 0.486 [0.468, 0.503] | 0.993 |
+| deberta_ft_s42 | 400 | 7982 | 0.988 [0.983, 0.993] | 0.959 [0.941, 0.976] | 0.993 |
+| modernbert_ft_s42 | 7168 | 3914 | 0.947 [0.934, 0.960] | 0.814 [0.782, 0.846] | 0.993 |
+
+With the evidence out of view, zero-shot detectors score 0.402 to 0.678. The fine-tuned detectors score `deberta_ft_s42` 0.988 (answer-only control on all evid>=400 rows: 0.993), `modernbert_ft_s42` 0.947 (answer-only control on all evid>=7168 rows: 0.993).
+
+### 7. Seed variation
+
+Only one training seed (42) is available, so there is no seed-variation estimate. The CIs above cover test-sample variation, not training variation.
+
+### Summary
+
+- Truncation costs the detectors up to 0.353 AUROC between the seed passage and 30K tokens; 17 of 17 chunk/retrieve strategies beat their own truncate at 30K on the same rows.
+- Zero-shot detectors above answer-only TF-IDF on the PHANTOM hard subset: `jev_choice`, `jev_noul`.
+- Fine-tuned detectors minus the answer-only fine-tuned control: -0.129 to +0.017 AUROC on PHANTOM, +0.053 to +0.122 on RAGTruth and rewritten HaluEval.
 
 ## Limitations
 
+- The answer-only control is one architecture (ModernBERT) and, for the PHANTOM grid, one seed; another encoder could find more or fewer answer-side cues.
+- `evid>=W` locates the evidence by exact match on the seed passage's first 200 characters. A fact restated elsewhere in the filing in other words is not detected, so a few of those rows may still hold usable evidence.
 - All three benchmarks contain answer-only signal (see the shortcut audit); absolute scores overstate grounding.
 - PHANTOM's long variants are built around a single 500-token evidence passage, so `min_phalluc` (any window supports the answer) suits it; claims needing evidence from several windows are not tested.
 - 512-token models (DeBERTa) cannot hold most seed passages in one window; their results are partial-evidence results.

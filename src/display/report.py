@@ -145,6 +145,265 @@ def _rel(p: Path) -> str:
     return "../" + p.relative_to(ARTIFACTS_DIR.parent).as_posix()
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# Discussion: every number and every comparative word ("above", "below chance") is computed from artifacts/metrics.
+# ---------------------------------------------------------------------------------------------------------------
+
+ANSWER_ONLY_CONTROL = "modernbert_answeronly_s42"
+LENS = [500, 2000, 5000, 10000, 20000, 30000]
+
+
+def _row(long: pd.DataFrame, det: str, sl: str, group: str, kind: str | None = None) -> pd.Series | None:
+    """The AUROC row for one detector / slice / group; ``kind`` picks truncate|chunk|retrieve (bidf retrieve first)."""
+    d = long[(long["detector"] == det) & (long["slice"] == sl) & (long["group"] == group) & (long["metric"] == "auroc")]
+    if kind:
+        d = d[d["strategy"].map(_strategy_kind) == kind]
+    if d.empty:
+        return None
+    return d.sort_values("strategy", key=lambda s: ~s.str.endswith("-bidf")).iloc[0]
+
+
+def _v(r: pd.Series | None) -> str:
+    return "n/a" if r is None else f"{r['value']:.3f}"
+
+
+def _vci(r: pd.Series | None) -> str:
+    if r is None:
+        return "n/a"
+    return f"{r['value']:.3f} [{r['ci_lo']:.3f}, {r['ci_hi']:.3f}]" if np.isfinite(r["ci_lo"]) else f"{r['value']:.3f}"
+
+
+def _diff(c: pd.Series) -> str:
+    sig = "" if c["ci_lo"] <= 0 <= c["ci_hi"] else "*"
+    return f"{c['diff']:+.3f} [{c['ci_lo']:+.3f}, {c['ci_hi']:+.3f}]{sig}"
+
+
+def _range(xs: list[float]) -> str:
+    return "n/a" if not xs else f"{min(xs):+.3f} to {max(xs):+.3f}"
+
+
+def _detectors(long: pd.DataFrame, kind: str) -> list[str]:
+    dets = sorted(long.loc[long["slice"] == "phantom_grid_sub", "detector"].unique())
+    dets = [d for d in dets if not d.endswith(("_ablate", "_full")) and not d.startswith("answer_")]
+    if kind == "zeroshot":
+        return [d for d in dets if "_ft_" not in d and "answeronly" not in d]
+    return [d for d in dets if "_ft_" in d]
+
+
+def discussion(long: pd.DataFrame, comp: pd.DataFrame, seeds: pd.DataFrame) -> str:
+    out = ["## Discussion\n"]
+    tf = lambda sl, g="all": _row(long, "answer_tfidf", sl, g)  # noqa: E731
+    ctl = lambda sl, g="all": _row(long, ANSWER_ONLY_CONTROL, sl, g)  # noqa: E731
+    tf_hard = tf("phantom_grid_full", "hard")
+
+    # 1. The answer-only lines.
+    out.append(
+        "### 1. The answer-only line\n\n"
+        f"Answer-only TF-IDF reaches {_vci(tf('phantom_grid_full'))} AUROC on PHANTOM test filings "
+        f"({_vci(tf_hard)} on the hard subset), {_vci(tf('ragtruth_test'))} on RAGTruth and {_vci(tf('halueval_test'))} on "
+        f"original HaluEval, where answer length alone gives {_vci(_row(long, 'answer_length', 'halueval_test', 'all'))}. "
+        f"Rewriting the HaluEval answers removes most of that: answer length falls to "
+        f"{_vci(_row(long, 'answer_length', 'halueval_norm_test', 'all'))} and TF-IDF to {_vci(tf('halueval_norm_test'))}.\n\n"
+        "TF-IDF is not the strongest answer-only line. `modernbert_answeronly_s42` is ModernBERT fine-tuned with the "
+        "same recipe as `modernbert_ft_s42` but with every context blanked, so it only ever sees question and answer. It "
+        f"reaches {_vci(ctl('phantom_grid_sub'))} on PHANTOM ({_vci(ctl('phantom_grid_sub', 'hard'))} hard, identical at every "
+        f"length because it never reads the document), {_vci(ctl('ragtruth_test'))} on RAGTruth and "
+        f"{_vci(ctl('halueval_norm_test'))} on rewritten HaluEval. The hard subset was built against the answer-length cue; "
+        "a fine-tuned encoder finds other answer-side cues that it does not remove. Fine-tuned detectors are therefore "
+        "judged against this control (section 5), zero-shot detectors against TF-IDF.\n"
+    )
+
+    # 2-3. Zero-shot detectors and the length curves.
+    rows, beats = [], []
+    for det in _detectors(long, "zeroshot"):
+        r = {"detector": det, "truncate seed": _v(_row(long, det, "phantom_grid_sub", "len=500", "truncate"))}
+        for k in ("truncate", "chunk", "retrieve"):
+            r[f"{k} 30K"] = _v(_row(long, det, "phantom_grid_sub", "len=30000", k))
+        hard = [x for x in (_row(long, det, "phantom_grid_sub", "hard", k) for k in ("truncate", "chunk", "retrieve")) if x is not None]
+        best = max(hard, key=lambda x: x["value"]) if hard else None
+        r["best hard (strategy)"] = "n/a" if best is None else f"{_vci(best)} ({_strategy_kind(best['strategy'])})"
+        rows.append(r)
+        if best is not None and tf_hard is not None and best["ci_lo"] > tf_hard["value"]:
+            beats.append(det)
+    if rows:
+        out.append(
+            "### 2. Zero-shot detectors on PHANTOM\n\n" + _md_table(pd.DataFrame(rows)) +
+            f"\n\nAnswer-only TF-IDF on the hard subset: {_vci(tf_hard)}. Detectors whose best hard-subset CI lies entirely "
+            f"above it: {', '.join(f'`{d}`' for d in beats) or 'none'}. The others do not show, on PHANTOM, that they use "
+            "the evidence better than a bag of answer words.\n"
+        )
+        drops, rec, chunk_shift = [], [], []
+        for det in _detectors(long, "zeroshot") + _detectors(long, "finetuned"):
+            t0, t30 = _row(long, det, "phantom_grid_sub", "len=500", "truncate"), _row(long, det, "phantom_grid_sub", "len=30000", "truncate")
+            if t0 is not None and t30 is not None:
+                drops.append((det, t0["value"] - t30["value"]))
+            c0, c30 = _row(long, det, "phantom_grid_sub", "len=500", "chunk"), _row(long, det, "phantom_grid_sub", "len=30000", "chunk")
+            if c0 is not None and c30 is not None:
+                chunk_shift.append(c30["value"] - c0["value"])
+            c = comp[(comp["detector"] == det) & (comp["slice"] == "phantom_grid_sub") & (comp["group"] == "len=30000")
+                     & comp["b"].str.startswith(f"{det}:truncate")]
+            for x in c.itertuples():
+                rec.append(x)
+        sig = [x for x in rec if x.ci_lo > 0]
+        out.append(
+            "### 3. Truncate, chunk and retrieve as the context grows\n\n"
+            "Truncation loses the evidence once it falls outside the window. From the seed passage to 30K nominal tokens "
+            "truncate loses " + ", ".join(f"`{d}` {x:+.3f}".replace("+-", "-") for d, x in sorted(drops, key=lambda t: -t[1])) +
+            " AUROC (positive = drop). Chunking and retrieval reread the whole document: at 30K, "
+            f"{len(sig)} of {len(rec)} chunk/retrieve strategies beat their own truncate on the same rows (paired CI above 0). "
+            f"Between the seed passage and 30K, chunk changes by {_range(chunk_shift)} AUROC across detectors. Recovering the "
+            "seed-length level is the ceiling here, and section 2 compares that level with the answer-only line.\n"
+        )
+
+    # 4. Position.
+    pos_rows = []
+    for det in _detectors(long, "zeroshot") + _detectors(long, "finetuned"):
+        r = {"detector": det}
+        for p in ("beginning", "middle", "end"):
+            r[p] = _v(_row(long, det, "phantom_grid_sub", f"pos={p}", "chunk"))
+        if any(r[p] != "n/a" for p in ("beginning", "middle", "end")):
+            vals = [float(r[p]) for p in ("beginning", "middle", "end") if r[p] != "n/a"]
+            r["spread"] = f"{max(vals) - min(vals):.3f}"
+            pos_rows.append(r)
+    if pos_rows:
+        out.append(
+            "### 4. Evidence position (chunk strategy, PHANTOM long cells)\n\n" + _md_table(pd.DataFrame(pos_rows)) +
+            "\n\nWith chunking every window is read, so position matters only through which window holds the evidence and "
+            "how much filing text surrounds it. The spread column is the largest gap between positions. The per-cell "
+            "heatmaps above show position by length.\n"
+        )
+
+    # 5. Fine-tuned vs zero-shot, against the answer-only control.
+    c = comp[comp["b"].str.startswith(f"{ANSWER_ONLY_CONTROL}:")]
+    keep = c["detector"].str.contains("_ft_") | c["detector"].str.startswith("jev_")
+    c = c[keep & c["group"].isin(["all", "hard", "len=30000|hard"])]
+    if not c.empty:
+        t = c.assign(diff_ci=c.apply(_diff, axis=1))[["detector", "a", "slice", "group", "n", "diff_ci"]]
+        t = t.rename(columns={"a": "strategy", "diff_ci": "AUROC minus answer-only control [95% CI]"})
+        ph = c[(c["slice"] == "phantom_grid_sub") & c["detector"].str.contains("_ft_")]
+        sh = c[c["slice"].isin(["ragtruth_test", "halueval_norm_test"]) & c["detector"].str.contains("_ft_")]
+        ft = _detectors(long, "finetuned")
+        out.append(
+            "### 5. Fine-tuned vs zero-shot, against the answer-only control\n\n"
+            "Fine-tuned detectors score " + ", ".join(
+                f"`{d}` {_v(_row(long, d, 'phantom_grid_sub', 'all', 'chunk'))} on PHANTOM and "
+                f"{_v(_row(long, d, 'ragtruth_test', 'all', 'chunk'))} on RAGTruth (chunk)" for d in ft) +
+            ", against at most " + _v(max((r for r in (_row(long, d, 'phantom_grid_sub', 'all', k) for d in _detectors(long, 'zeroshot')
+                                              for k in ('truncate', 'chunk', 'retrieve')) if r is not None), key=lambda r: r['value'], default=None)) +
+            " for any zero-shot detector on PHANTOM. The paired differences against the answer-only control "
+            "(\\* = CI excludes 0) say how much of that comes from reading the evidence:\n\n" + _md_table(t) + "\n\n"
+            f"On PHANTOM the fine-tuned detectors differ from the control by {ph['diff'].min():+.3f} to {ph['diff'].max():+.3f} "
+            f"AUROC (all rows, hard subset and 30K hard). On RAGTruth and rewritten HaluEval they are "
+            f"{sh['diff'].min():+.3f} to {sh['diff'].max():+.3f} relative to it. "
+            + _control_verdict(ph, sh) + "\n" if not ph.empty and not sh.empty else "")
+
+    # 6. Ablations and evidence-outside-window rows.
+    ab = []
+    for det in sorted(long.loc[long["detector"].str.endswith("_ablate") & ~long["detector"].str.endswith("_full"), "detector"].unique()):
+        r = {"detector": det}
+        for sl, g, name in (("phantom_seed_test", "all", "PHANTOM seed"), ("phantom_seed_test", "hard", "PHANTOM seed hard"),
+                            ("ragtruth_test", "all", "RAGTruth"), ("halueval_test", "all", "HaluEval"), ("halueval_norm_test", "all", "HaluEval-norm")):
+            r[name] = _v(_row(long, det, sl, g))
+        ab.append(r)
+    inverted = [r["detector"] for r in ab for k, v in r.items() if k != "detector" and v != "n/a" and float(v) < 0.5]
+    ev = []
+    for det in _detectors(long, "zeroshot") + _detectors(long, "finetuned"):
+        t = _row(long, det, "phantom_grid_sub", "all", "truncate")
+        if t is None:
+            continue
+        w = int(t["strategy"].split("-w")[1].split("_")[0])
+        a, h = _row(long, det, "phantom_grid_sub", f"evid>={w}", "truncate"), _row(long, det, "phantom_grid_sub", f"evid>={w}|hard", "truncate")
+        if a is not None:
+            ev.append({"detector": det, "window": w, "n": int(a["n"]), "AUROC": _vci(a), "hard": _vci(h),
+                       "answer-only control, all evid>=W rows": _v(_row(long, ANSWER_ONLY_CONTROL, "phantom_grid_sub", f"evid>={w}"))})
+    if ab:
+        out.append(
+            "### 6. Ablations: what is left without the evidence\n\n"
+            "Empty-context runs score each answer with a blank context:\n\n" + _md_table(pd.DataFrame(ab)) + "\n\n"
+            + (f"Below 0.5 (inverted, so the score still carries answer information, in reverse): "
+               f"{', '.join(sorted(set(f'`{d}`' for d in inverted)))}. " if inverted else "")
+            + _ablation_verdict(ab) + "\n\n"
+            "An empty context is out of distribution for the fine-tuned models, so it understates what they can do "
+            "without evidence. The `evid>=W` rows avoid that: documents whose evidence passage first appears after W words, so "
+            "a `truncate-wW` window provably cannot contain it (`artifacts/phantom_evidence_offsets.csv`).\n\n"
+            + (_md_table(pd.DataFrame(ev)) + "\n\n" + _evidence_verdict(ev) + "\n" if ev else "")
+        )
+
+    # 7. Seed variation.
+    if seeds is not None and not seeds.empty:
+        s = seeds[(seeds["metric"] == "auroc")]
+        s = s.assign(value=s.apply(lambda r: f"{r['mean']:.3f} +/- {r['sd']:.3f} (n={int(r['n_seeds'])})", axis=1))
+        s = s[["base", "strategy", "slice", "group", "value"]]
+        out.append("### 7. Seed variation\n\nMean +/- sd over training seeds:\n\n" + _md_table(s) + "\n\n"
+                   f"The largest seed sd is {seeds.loc[seeds['metric'] == 'auroc', 'sd'].max():.3f} AUROC, so differences "
+                   "between models in sections 2 and 5 that are larger than that are not seed noise.\n")
+    else:
+        out.append("### 7. Seed variation\n\nOnly one training seed (42) is available, so there is no seed-variation estimate. "
+                   "The CIs above cover test-sample variation, not training variation.\n")
+
+    summ = ["### Summary\n"]
+    if rows:
+        summ.append(f"- Truncation costs the detectors up to {max(x for _, x in drops):.3f} AUROC between the seed passage and "
+                    f"30K tokens; {len(sig)} of {len(rec)} chunk/retrieve strategies beat their own truncate at 30K on the same rows.")
+        summ.append(f"- Zero-shot detectors above answer-only TF-IDF on the PHANTOM hard subset: {', '.join(f'`{d}`' for d in beats) or 'none'}.")
+    if not c.empty:
+        ph = c[(c["slice"] == "phantom_grid_sub") & c["detector"].str.contains("_ft_")]
+        sh = c[c["slice"].isin(["ragtruth_test", "halueval_norm_test"]) & c["detector"].str.contains("_ft_")]
+        if not ph.empty and not sh.empty:
+            summ.append(f"- Fine-tuned detectors minus the answer-only fine-tuned control: {ph['diff'].min():+.3f} to "
+                        f"{ph['diff'].max():+.3f} AUROC on PHANTOM, {sh['diff'].min():+.3f} to {sh['diff'].max():+.3f} on RAGTruth "
+                        "and rewritten HaluEval.")
+    out.append("\n".join(summ) + "\n")
+    return "\n".join(out)
+
+
+def _control_verdict(ph: pd.DataFrame, sh: pd.DataFrame) -> str:
+    """Sentences worded from the paired CIs, never from expectations."""
+    pos_ph, neg_ph, pos_sh = ph[ph["ci_lo"] > 0], ph[ph["ci_hi"] < 0], sh[sh["ci_lo"] > 0]
+    parts = []
+    if len(pos_sh) == len(sh):
+        parts.append("Every RAGTruth and HaluEval comparison is above the control (CI above 0), so on those datasets the "
+                     "fine-tuned models use the evidence.")
+    else:
+        parts.append(f"{len(pos_sh)} of {len(sh)} RAGTruth/HaluEval comparisons are above the control.")
+    parts.append(f"On PHANTOM, {len(pos_ph)} of {len(ph)} comparisons are above the control (largest gain "
+                 f"{ph['diff'].max():+.3f}) and {len(neg_ph)} are below it (largest loss {ph['diff'].min():+.3f}).")
+    worst = ph.loc[ph["diff"].idxmin()]
+    if worst["ci_hi"] < 0:
+        parts.append(f"The largest loss is `{worst['detector']}` {_strategy_kind(worst['a'])} ({worst['group']}): reading a "
+                     "window that does not contain the evidence scores worse than not reading the context at all.")
+    return " ".join(parts)
+
+
+def _ablation_verdict(ab: list[dict]) -> str:
+    def f(r: dict, k: str) -> float | None:
+        return float(r[k]) if r.get(k, "n/a") != "n/a" else None
+    lines = []
+    for r in ab:
+        if "_ft_" not in r["detector"]:
+            continue
+        ph, rt = f(r, "PHANTOM seed"), f(r, "RAGTruth")
+        if ph is not None and rt is not None:
+            lines.append(f"With no context, `{r['detector']}` scores {ph:.3f} on PHANTOM seed passages and {rt:.3f} on RAGTruth.")
+    return " ".join(lines)
+
+
+def _evidence_verdict(ev: list[dict]) -> str:
+    def val(s: str) -> float:
+        return float(s.split(" ")[0])
+    zs = [r for r in ev if "_ft_" not in r["detector"]]
+    ft = [r for r in ev if "_ft_" in r["detector"]]
+    out = []
+    if zs:
+        out.append(f"With the evidence out of view, zero-shot detectors score {min(val(r['AUROC']) for r in zs):.3f} to "
+                   f"{max(val(r['AUROC']) for r in zs):.3f}.")
+    if ft:
+        out.append("The fine-tuned detectors score " + ", ".join(
+            f"`{r['detector']}` {val(r['AUROC']):.3f} (answer-only control on all evid>={r['window']} rows: {r['answer-only control, all evid>=W rows']})"
+            for r in ft) + ".")
+    return " ".join(out)
+
+
 def generate_report() -> Path:
     from src.pipeline import status_rows
 
@@ -248,10 +507,17 @@ def generate_report() -> Path:
     else:
         sections.append("## Fine-tuning\n\n_Pending: GPU stage `finetune` (see HANDOFF.md)._\n")
 
+    if long_path.exists() and (METRICS_DIR / "comparisons.csv").exists():
+        seeds = read_table(seeds_path) if seeds_path.exists() and seeds_path.stat().st_size > 1 else None
+        sections.append(discussion(long, read_table(METRICS_DIR / "comparisons.csv"), seeds))
+    else:
+        sections.append("## Discussion\n\n_Pending: run `python -m src.cli evaluate`._\n")
     sections.append(
-        "## Discussion\n\n_To be written once the GPU stages are complete. It must discuss each result against the "
-        "answer-only line and the hard subset, not in isolation._\n\n"
         "## Limitations\n\n"
+        "- The answer-only control is one architecture (ModernBERT) and, for the PHANTOM grid, one seed; another encoder "
+        "could find more or fewer answer-side cues.\n"
+        "- `evid>=W` locates the evidence by exact match on the seed passage's first 200 characters. A fact restated "
+        "elsewhere in the filing in other words is not detected, so a few of those rows may still hold usable evidence.\n"
         "- All three benchmarks contain answer-only signal (see the shortcut audit); absolute scores overstate grounding.\n"
         "- PHANTOM's long variants are built around a single 500-token evidence passage, so `min_phalluc` (any window "
         "supports the answer) suits it; claims needing evidence from several windows are not tested.\n"
