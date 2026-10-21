@@ -523,8 +523,8 @@ def generate_report() -> Path:
         sections.append("## Discussion\n\n_Pending: run `python -m src.cli evaluate`._\n")
     sections.append(
         "## Limitations\n\n"
-        "- The answer-only control is one architecture (ModernBERT) and, for the PHANTOM grid, one seed; another encoder "
-        "could find more or fewer answer-side cues.\n"
+        "- The answer-only control is one architecture (ModernBERT); another encoder could find more or fewer answer-side cues. "
+        "The paired tests in section 5 use control seed 42 and one fine-tuned seed (42) on the long PHANTOM grid; seed sd is in section 7.\n"
         "- `evid>=W` locates the evidence by exact match on the seed passage's first 200 characters. A fact restated "
         "elsewhere in the filing in other words is not detected, so a few of those rows may still hold usable evidence.\n"
         "- All three benchmarks contain answer-only signal (see the shortcut audit); absolute scores overstate grounding.\n"

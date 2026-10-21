@@ -432,7 +432,7 @@ The largest seed sd is 0.006 AUROC. Seed-mean gap, fine-tuned ModernBERT minus t
 
 ## Limitations
 
-- The answer-only control is one architecture (ModernBERT) and, for the PHANTOM grid, one seed; another encoder could find more or fewer answer-side cues.
+- The answer-only control is one architecture (ModernBERT); another encoder could find more or fewer answer-side cues. The paired tests in section 5 use control seed 42 and one fine-tuned seed (42) on the long PHANTOM grid; seed sd is in section 7.
 - `evid>=W` locates the evidence by exact match on the seed passage's first 200 characters. A fact restated elsewhere in the filing in other words is not detected, so a few of those rows may still hold usable evidence.
 - All three benchmarks contain answer-only signal (see the shortcut audit); absolute scores overstate grounding.
 - PHANTOM's long variants are built around a single 500-token evidence passage, so `min_phalluc` (any window supports the answer) suits it; claims needing evidence from several windows are not tested.
