@@ -1,0 +1,34 @@
+# Jev + answer-only control stack. Pre-registered 2026-10-21, committed before any test slice was scored with it.
+#
+# Question: does the evidence reader (TypeSafe Jev, zero-shot) carry information that the fine-tuned answer-only
+# control (modernbert_answeronly_s42, context blanked) does not? The fine-tuned context-reading models did not show
+# that on PHANTOM (section 5 of the report). A stack that beats the control on the same rows would show it for Jev.
+#
+# Fixed before running:
+# - Members: logit of jev_noul (retrieve-w1500-o750-min_phalluc-k2-bidf; jev_noul_full on phantom_grid_sub, the same
+#   detector config scored on all 12,800 rows) and logit of modernbert_answeronly_s42 (truncate-w7168, ablated).
+#   Logistic regression, C=1, standardized features, 5-fold out-of-fold on validation grouped by pair.
+# - Fitted per dataset on validation only: phantom_val (296 rows, the full slice) and ragtruth_val (605 rows, the
+#   rows Jev was scored on). Each model is applied only to its own dataset's test slice, once, whatever the
+#   validation result. HaluEval is left out: Jev was scored on original HaluEval, the control on rewritten HaluEval.
+# - Readouts (evaluate, paired bootstrap on the same rows): stack minus control and stack minus Jev on
+#   phantom_grid_sub (all, hard, len=N|hard) and ragtruth_test (all). A gain counts only if its CI excludes 0 and
+#   it is above 0.006 AUROC, the largest training-seed sd (artifacts/metrics/seed_summary.csv).
+# - Expected: little or no gain on PHANTOM, where both members are near the ceiling (control 0.993, Jev 0.96-0.97).
+#   phantom_val holds seed-length 8-K/497K filings only, so the PHANTOM model is applied out of distribution in length.
+#
+#   python -m src.cli stack --config configs/stack_jev_answeronly.yaml
+name: stack_jev_answeronly
+stacks:
+  - name: jev_answeronly_stack
+    strategy: stack
+    members: &members
+      - {detector: jev_noul, strategy: retrieve-w1500-o750-min_phalluc-k2-bidf, aliases: {phantom_grid_sub: jev_noul_full}}
+      - {detector: modernbert_answeronly_s42, strategy: truncate-w7168__ablate}
+    fit_slices: [phantom_val]
+    apply_slices: [phantom_grid_sub]
+  - name: jev_answeronly_stack
+    strategy: stack
+    members: *members
+    fit_slices: [ragtruth_val]
+    apply_slices: [ragtruth_test]

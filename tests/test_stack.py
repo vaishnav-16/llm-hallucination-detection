@@ -3,6 +3,7 @@
 import json
 
 import numpy as np
+import pytest
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
@@ -44,3 +45,39 @@ def test_stack_fits_on_validation_and_ignores_test_labels(tmp_path):
     run_stack(spec, pred_dir=tmp_path)
     again = pd.read_parquet(tmp_path / f"stk__{STRAT}__a_test.parquet")
     np.testing.assert_allclose(again["p_halluc"], test["p_halluc"])
+
+
+def _write_member(pred_dir, det, strategy, sl, dataset, ids, label, p):
+    stem = f"{det}__{strategy[:-len('__ablate')]}__{sl}__ablate" if strategy.endswith("__ablate") else f"{det}__{strategy}__{sl}"
+    pd.DataFrame({"example_id": ids, "pair_id": [i // 2 for i in range(len(ids))], "dataset": dataset, "label": label,
+                  "p_halluc": p, "detector": det, "strategy": strategy, "run_id": stem}).to_parquet(pred_dir / f"{stem}.parquet")
+
+
+def test_stack_mixed_members_aliases_and_row_coverage(tmp_path):
+    (tmp_path / "manifest").mkdir()
+    rng = np.random.default_rng(0)
+    ctl_strat = "truncate-w7168__ablate"
+    for sl, ds, n, ev_det in (("a_val", "a", 200, "ev"), ("a_test", "a", 200, "ev_full"), ("b_test", "b", 200, "ev")):
+        label = np.tile([0, 1], n // 2)
+        ids = [f"{sl}-{i}" for i in range(n)]
+        # The evidence member sees half the signal, the control the other half; the control also covers 50 extra rows.
+        sig = rng.normal(0, 1, n)
+        _write_member(tmp_path, ev_det, STRAT, sl, ds, ids, label, 1 / (1 + np.exp(-(2 * label - 1 + sig))))
+        extra = [f"{sl}-x{i}" for i in range(50)]
+        _write_member(tmp_path, "ctl", ctl_strat, sl, ds, ids + extra, np.r_[label, np.tile([0, 1], 25)],
+                      1 / (1 + np.exp(-(2 * np.r_[label, np.tile([0, 1], 25)] - 1 + rng.normal(0, 1, n + 50)))))
+    spec = {"name": "mix", "strategy": "stack", "fit_slices": ["a_val"], "apply_slices": ["a_test"],
+            "members": [{"detector": "ev", "strategy": STRAT, "aliases": {"a_test": "ev_full"}},
+                        {"detector": "ctl", "strategy": ctl_strat}]}
+    run_stack(spec, pred_dir=tmp_path)
+    test = pd.read_parquet(tmp_path / "mix__stack__a_test.parquet")
+    assert len(test) == 200  # the first member's rows, through the alias; the control's extra rows are dropped
+    ev = pd.read_parquet(tmp_path / f"ev_full__{STRAT}__a_test.parquet")
+    assert roc_auc_score(test["label"], test["p_halluc"]) > roc_auc_score(ev["label"], ev["p_halluc"])
+    assert not (tmp_path / "mix__stack__b_test.parquet").exists()  # apply_slices keeps the model on its own dataset
+
+    # A control that misses some of the first member's rows must raise, not shrink the slice.
+    d = pd.read_parquet(tmp_path / "ctl__truncate-w7168__a_test__ablate.parquet")
+    d.iloc[10:].to_parquet(tmp_path / "ctl__truncate-w7168__a_test__ablate.parquet")
+    with pytest.raises(ValueError, match="covers 190 of the 200 rows"):
+        run_stack(spec, pred_dir=tmp_path)

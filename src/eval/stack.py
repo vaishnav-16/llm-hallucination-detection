@@ -18,6 +18,13 @@ A stack is declared in a config's ``stacks:`` list::
         members: [jev_v2_support, jev_v2_numbers, jev_v2_entities, jev_v2_extra, jev_v2_choice2]
         fit_slices: [phantom_val, ragtruth_val, halueval_val]
 
+Members may also come from different detectors, each with its own strategy (``{detector, strategy, aliases}``), e.g.
+Jev plus the fine-tuned answer-only control. ``aliases`` maps a slice to another run of the same detector config that
+covers more rows there (``jev_noul_full`` on ``phantom_grid_sub``). The first member defines the rows; every other
+member must cover all of them, or the stage raises. ``apply_slices`` limits where a fitted model is applied, so a
+model fitted on one dataset's validation slice is never applied to another dataset. In that form ``strategy`` is the
+output tag only.
+
 Outputs go next to the members' predictions as ``<name>__<strategy>__<slice>.parquet``, with a manifest record that
 holds the coefficients and the members' config hashes.
 """
@@ -52,25 +59,51 @@ def _logit(p: np.ndarray) -> np.ndarray:
     return np.log(p / (1 - p))
 
 
-def _member_frame(members: list[str], strategy: str, sl: str, pred_dir: Path) -> pd.DataFrame | None:
-    """Rows of one slice with one feature column per member, aligned on example_id. None if any member is missing."""
+def _members(spec: dict) -> list[dict]:
+    """Normalise members to {name, detector, strategy, aliases}; a plain string uses the stack's own strategy."""
+    out = []
+    for m in spec["members"]:
+        m = {"detector": m} if isinstance(m, str) else dict(m)
+        out.append({"name": m["detector"], "detector": m["detector"], "strategy": m.get("strategy", spec["strategy"]),
+                    "aliases": dict(m.get("aliases") or {})})
+    return out
+
+
+def _run_stem(det: str, strategy: str, sl: str) -> str:
+    """Prediction file stem; ablated runs put ``__ablate`` after the slice (``<det>__<strategy>__<slice>__ablate``)."""
+    if strategy.endswith("__ablate"):
+        return f"{det}__{strategy[:-len('__ablate')]}__{sl}__ablate"
+    return f"{det}__{strategy}__{sl}"
+
+
+def _member_frame(members: list[dict], sl: str, pred_dir: Path) -> pd.DataFrame | None:
+    """Rows of one slice with one feature column per member, aligned on example_id. None if any member is missing.
+
+    The first member defines the rows. Another member may cover more rows (it is restricted to these), but a row it
+    lacks raises: members scored on different rows must never be silently intersected.
+    """
     out = None
     for m in members:
-        path = pred_dir / f"{m}__{strategy}__{sl}.parquet"
+        path = pred_dir / f"{_run_stem(m['aliases'].get(sl, m['detector']), m['strategy'], sl)}.parquet"
         if not path.exists():
             return None
         d = read_table(path)
         if out is None:
             out = d.drop(columns=["p_halluc", "detector", "strategy", "run_id"]).copy()
-        elif len(d) != len(out):
-            raise ValueError(f"{path.name}: {len(d)} rows, expected {len(out)} (members scored on different rows)")
-        out = out.merge(d[["example_id", "p_halluc"]].rename(columns={"p_halluc": m}), on="example_id", how="inner", validate="1:1")
+            out = out.merge(d[["example_id", "p_halluc"]].rename(columns={"p_halluc": m["name"]}), on="example_id", validate="1:1")
+            continue
+        n = len(out)
+        out = out.merge(d[["example_id", "p_halluc"]].rename(columns={"p_halluc": m["name"]}), on="example_id", how="inner", validate="1:1")
+        if len(out) != n:
+            raise ValueError(f"{path.name}: covers {len(out)} of the {n} rows of the first member (members scored on different rows)")
     return out
 
 
-def _slices(members: list[str], strategy: str, pred_dir: Path) -> list[str]:
-    prefix = f"{members[0]}__{strategy}__"
-    return sorted(p.name[len(prefix):-len(".parquet")] for p in pred_dir.glob(f"{prefix}*.parquet"))
+def _slices(members: list[dict], pred_dir: Path) -> list[str]:
+    m = members[0]
+    prefix, suffix = _run_stem(m["detector"], m["strategy"], "{slice}").split("{slice}")
+    names = {p.name[len(prefix):-len(suffix + ".parquet")] for p in pred_dir.glob(f"{prefix}*{suffix}.parquet")}
+    return sorted(n for n in names if n and "__" not in n)
 
 
 def _model(C: float):
@@ -83,11 +116,13 @@ def _weights(datasets: pd.Series) -> np.ndarray:
 
 
 def run_stack(spec: dict, pred_dir: Path = PRED_DIR, C: float = 1.0, n_folds: int = 5) -> list[Path]:
-    name, strategy, members = spec["name"], spec["strategy"], list(spec["members"])
+    name, strategy = spec["name"], spec["strategy"]
+    mspec = _members(spec)
+    members = [m["name"] for m in mspec]
     fit_slices = list(spec["fit_slices"])
     fit_parts = []
     for sl in fit_slices:
-        f = _member_frame(members, strategy, sl, pred_dir)
+        f = _member_frame(mspec, sl, pred_dir)
         if f is None:
             raise FileNotFoundError(f"stack {name}: members missing predictions on fit slice {sl} ({strategy})")
         fit_parts.append(f.assign(_slice=sl))
@@ -110,18 +145,21 @@ def run_stack(spec: dict, pred_dir: Path = PRED_DIR, C: float = 1.0, n_folds: in
 
     man_dir = pred_dir / "manifest"
     member_hashes = {}
-    for mem in members:
-        for p in sorted(man_dir.glob(f"{mem}__{strategy}__*.json")):
-            member_hashes[p.stem] = read_json(p).get("hash")
+    for m in mspec:
+        for det in sorted({m["detector"], *m["aliases"].values()}):
+            prefix, suffix = _run_stem(det, m["strategy"], "{slice}").split("{slice}")
+            for p in sorted(man_dir.glob(f"{prefix}*{suffix}.json")):
+                member_hashes[p.stem] = read_json(p).get("hash")
     stack_hash = hashlib.sha1(json.dumps({"spec": spec, "C": C, "n_folds": n_folds, "members": member_hashes},
                                          sort_keys=True).encode()).hexdigest()[:12]
     written = []
-    for sl in _slices(members, strategy, pred_dir):
+    targets = list(spec["apply_slices"]) + fit_slices if spec.get("apply_slices") else _slices(mspec, pred_dir)
+    for sl in sorted(set(targets)):
         if sl in fit_slices:
             f = fit[fit["_slice"] == sl].drop(columns="_slice")
             p = oof[(fit["_slice"] == sl).to_numpy()]
         else:
-            f = _member_frame(members, strategy, sl, pred_dir)
+            f = _member_frame(mspec, sl, pred_dir)
             if f is None:
                 logger.warning("stack %s: skipping %s (not every member scored it)", name, sl)
                 continue
@@ -133,7 +171,7 @@ def run_stack(spec: dict, pred_dir: Path = PRED_DIR, C: float = 1.0, n_folds: in
         written.append(write_table(out, pred_dir / f"{out['run_id'].iloc[0]}.parquet"))
         write_json({
             "hash": stack_hash, "run": name, "slice": sl, "strategy": strategy, "ablate": False,
-            "detector": {"name": name, "type": "stack", "members": members, "coefficients_standardized": coefs,
+            "detector": {"name": name, "type": "stack", "members": spec["members"], "coefficients_standardized": coefs,
                          "intercept": round(float(lr.intercept_[0]), 4), "C": C, "fit_slices": fit_slices,
                          "out_of_fold_val_auroc": val_auroc, "member_val_auroc": member_auroc,
                          "fit_rows": int(len(fit)), "out_of_fold": sl in fit_slices},

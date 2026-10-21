@@ -44,6 +44,10 @@ EVIDENCE_OFFSETS = ARTIFACTS_DIR / "phantom_evidence_offsets.csv"
 OFFSET_KEYS = ["pair_id", "filing", "target_tokens", "position"]
 ANSWER_ONLY_CONTROL = "modernbert_answeronly_s42"  # ModernBERT fine-tuned on question + answer only (no context)
 CONTROL_SLICES = ("phantom_grid_sub", "phantom_seed_test", "ragtruth_test", "halueval_norm_test")
+# Stacks compared with their evidence-reading member on the same rows (configs/stack_jev_answeronly.yaml):
+# stack -> (member strategy, {slice: member detector}).
+STACK_MEMBERS = {"jev_answeronly_stack": ("retrieve-w1500-o750-min_phalluc-k2-bidf",
+                                          {"phantom_grid_sub": "jev_noul_full", "ragtruth_test": "jev_noul"})}
 
 
 def load_predictions(pred_dir=ARTIFACTS_DIR / "predictions") -> pd.DataFrame:
@@ -168,6 +172,7 @@ def _comparisons(preds: pd.DataFrame, n_boot: int = 500) -> pd.DataFrame:
                 rows.append({"detector": det, "slice": sl, "a": sa, "b": f"{'answer_tfidf' if sb == 'answer_tfidf' else det}:{sb}",
                              "group": n, "n": len(g), "metric": "auroc", **r})
     rows += _control_comparisons(preds, n_boot)
+    rows += _stack_comparisons(preds, n_boot)
     cols = ["detector", "slice", "a", "b", "group", "n", "metric", "diff", "ci_lo", "ci_hi", "p_value"]
     return pd.DataFrame(rows, columns=cols)
 
@@ -198,6 +203,31 @@ def _control_comparisons(preds: pd.DataFrame, n_boot: int = 500) -> list[dict]:
                                       sub["pair_id"].to_numpy(), "auroc", n_boot=n_boot)
             rows.append({"detector": det, "slice": sl, "a": strat, "b": f"{ANSWER_ONLY_CONTROL}:{b['strategy'].iloc[0]}",
                          "group": g, "n": len(sub), "metric": "auroc", **r})
+    return rows
+
+
+def _stack_comparisons(preds: pd.DataFrame, n_boot: int = 500) -> list[dict]:
+    """Each stack in STACK_MEMBERS minus its evidence-reading member alone, on the same rows (groups as for the control)."""
+    rows = []
+    for stack, (mstrat, by_slice) in STACK_MEMBERS.items():
+        for (strat, sl), d in preds[preds["detector"] == stack].groupby(["strategy", "slice"]):
+            if sl not in by_slice:
+                continue
+            b = preds[(preds["detector"] == by_slice[sl]) & (preds["strategy"] == mstrat) & (preds["slice"] == sl)]
+            m = _paired(d, b)
+            if len(m) != len(d):
+                raise ValueError(f"{stack} on {sl}: {by_slice[sl]} covers {len(m)} of {len(d)} rows")
+            groups = [("all", m)]
+            if sl.startswith("phantom"):
+                hard = m[m["faithful_chars"] >= HARD_FAITHFUL_CHARS]
+                groups += [("hard", hard)] + [(f"len={k}|hard", v) for k, v in hard.groupby("target_tokens")]
+            for g, sub in groups:
+                if len(sub) < 20 or sub["label"].nunique() < 2:
+                    continue
+                r = paired_bootstrap_diff(sub["label"].to_numpy(), sub["p_halluc_a"].to_numpy(), sub["p_halluc_b"].to_numpy(),
+                                          sub["pair_id"].to_numpy(), "auroc", n_boot=n_boot)
+                rows.append({"detector": stack, "slice": sl, "a": strat, "b": f"{by_slice[sl]}:{mstrat}",
+                             "group": g, "n": len(sub), "metric": "auroc", **r})
     return rows
 
 
